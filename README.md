@@ -1,39 +1,52 @@
-# Knot Project Submission
+﻿# Knot: Community Resource-Sharing Platform
 
-This repository includes a standalone Windows launcher build for submission.
+Knot lets people share items and micro-rent them, cutting the cost and
+waste of buying things you only need occasionally.
 
-## What to submit
+**Live demo:** https://knot-jdvl.onrender.com/
+(Hosted on a free tier, so the first load can take up to a minute.)
 
-Submit the executable at `dist/knot-launcher.exe`.
+**Demo login:** demo@example.com / YourDemoPassword
 
-If the upload platform expects a zip file, include these files:
+## Features
+- User authentication, profiles and password reset by email
+- Item listings with images
+- Booking system with admin approval
+- Campaigns and item suggestions
+- Payments via PayHero (M-Pesa), running in test mode for the demo
 
-- `dist/knot-launcher.exe`
-- `.env.example`
-- this `README.md`
+## Tech stack
+Python, Django, SQL, HTML/CSS, JavaScript. Deployed on Render.
 
-## Secrets and configuration
+## Run locally
+1. Create and activate a virtual environment: `python -m venv venv`
+2. Install dependencies: `pip install -r requirements.txt`
+3. Set the environment variables listed below
+4. Run `python manage.py migrate`, then `python manage.py runserver`
 
-Do not hardcode secrets in the executable or repository files.
+## Configuration
+Secrets are read from environment variables and are not stored in this
+repository. See `render.yaml` and `.env.example` for the full list.
 
-Set these values in environment variables on the target machine:
+| Variable | Purpose |
+|---|---|
+| `DJANGO_SECRET_KEY` | Django secret key |
+| `DJANGO_DEBUG` | `True` for local development only |
+| `DJANGO_ALLOWED_HOSTS` | Comma-separated allowed hosts |
+| `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | SMTP account for verification and reset emails |
+| `PAYHERO_*` | PayHero payment credentials |
+| `PAYHERO_TEST_MODE` | `True` to run payments in test mode |
+| `NGROK_URL` | Public URL used for payment callbacks |
 
-- `DJANGO_SECRET_KEY`
-- `DJANGO_DEBUG`
-- `DJANGO_ALLOWED_HOSTS`
-- `EMAIL_HOST_USER`
-- `EMAIL_HOST_PASSWORD`
-- `PAYHERO_USERNAME`
-- `PAYHERO_API_KEY`
-- `PAYHERO_API_SECRET`
-- `PAYHERO_WEBHOOK_SECRET`
-- `PAYHERO_ACCOUNT_NUMBER`
-- `PAYHERO_CHANNEL_ID`
-- `NGROK_URL`
-- `PAYHERO_TEST_MODE`
+## Windows launcher (optional)
+`knot_launcher.py` builds a standalone Windows executable with PyInstaller
+(see `scripts/build_launcher.ps1`). It runs the Django app locally and keeps
+the database and media in folders next to the executable.
 
-## Build notes
+## Notes
+- The live demo is deployed from a separate private repository.
+- Work in progress: moving to a managed Postgres database and adding a demo payment mode
 
-The launcher is built with PyInstaller and starts the Django app directly.
-It keeps the database, media files, and static output in writable folders next
-to the executable so the app can run without exposing credentials.
+## Author
+Sally Munga: [LinkedIn](https://www.linkedin.com/in/sally-munga)
+
