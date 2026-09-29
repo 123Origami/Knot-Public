@@ -1,0 +1,295 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Requests - Knot</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style> 
+        /* Targeted fix for the Switch to Member link */
+        .admin-user-action-link {
+            color: #000000 !important; /* Pure black */
+            font-weight: 600; /* Making it slightly bolder helps it look "darker" */
+        }
+
+        .admin-user-action-link i {
+            color: #000000 !important; /* Ensures the icon darkens too */
+        }
+
+        /* Optional: Add a hover effect so the user knows it's clickable */
+        .admin-user-action-link:hover {
+            color: #be185d !important; /* Switches to your primary burgundy on hover */
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar admin-navbar">
+        <div class="container nav-container">
+            <a href="{% url 'admin_dashboard' %}" class="logo">
+                <i class="fas fa-link"></i> Knot Admin
+            </a>
+            <ul class="nav-menu">
+                <li><a href="{% url 'admin_dashboard' %}" {% if request.resolver_match.url_name == 'admin_dashboard' %}class="active"{% endif %}><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="{% url 'admin_users' %}" {% if request.resolver_match.url_name == 'admin_users' %}class="active"{% endif %}><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="{% url 'admin_items' %}" {% if request.resolver_match.url_name == 'admin_items' %}class="active"{% endif %}><i class="fas fa-box"></i> Items</a></li>
+                <li><a href="{% url 'admin_suggestions' %}" {% if request.resolver_match.url_name == 'admin_suggestions' %}class="active"{% endif %}><i class="fas fa-lightbulb"></i> Suggestions</a></li>
+                <li><a href="{% url 'admin_bookings' %}" {% if request.resolver_match.url_name == 'admin_bookings' %}class="active"{% endif %}><i class="fas fa-calendar-check"></i> Bookings</a></li>
+                <li><a href="{% url 'admin_request_list' %}" {% if request.resolver_match.url_name == 'admin_request_list' %}class="active"{% endif %}><i class="fas fa-user-shield"></i> Requests</a></li>
+                <li><a href="{% url 'admin_reports' %}" {% if request.resolver_match.url_name == 'admin_reports' %}class="active"{% endif %}><i class="fas fa-chart-bar"></i> Reports</a></li>
+                <li class="auth-buttons">
+                    <div class="admin-user-dropdown">
+                        <button type="button" class="admin-user-toggle admin-user-pill" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-user-shield"></i>
+                            <span>{{ user.username }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="admin-dropdown-menu">
+                            <a href="{% url 'user_dashboard' %}" class="admin-user-action-link">
+                                <i class="fas fa-user"></i>
+                                <span>Switch to Member Panel</span>
+                            </a>
+                            <a href="{% url 'logout' %}" class="admin-user-action-link danger">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                            </a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+            <button class="hamburger" id="hamburger">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1><i class="fas fa-user-shield"></i> Admin Request Management</h1>
+            <p>Review and manage community admin requests</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <section class="dashboard">
+        <div class="container">
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Quick Actions -->
+            <div class="admin-quick-actions">
+                <a href="{% url 'index' %}" class="btn btn-primary">
+                    <i class="fas fa-home"></i> Back to Home
+                </a>
+            </div>
+
+            <!-- Pending Requests -->
+            <div class="admin-section">
+                <div class="admin-stats-dashboard">
+                    <div class="stat-card">
+                        <div class="stat-number">{{ pending_requests.count }}</div>
+                        <div class="stat-label">Pending Requests</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">{{ approved_requests.count }}</div>
+                        <div class="stat-label">Approved Admins</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">{{ rejected_requests.count }}</div>
+                        <div class="stat-label">Rejected Requests</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Requests Section -->
+            <div class="admin-panel" style="margin-bottom: 2rem;">
+                <h2><i class="fas fa-clock"></i> Pending Requests</h2>
+                
+                {% for user in pending_requests %}
+                    <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--warning-color);">
+                        <div class="card-header">
+                            <div>
+                                <h3>{{ user.username }}</h3>
+                                <p style="color: var(--gray-color);">
+                                    <i class="fas fa-envelope"></i> {{ user.email }} | 
+                                    <i class="fas fa-phone"></i> {{ user.phone_number|default:"Not provided" }} |
+                                    <i class="fas fa-calendar"></i> {{ user.admin_request_date|date:"M d, Y H:i" }}
+                                </p>
+                            </div>
+                            <span class="badge badge-warning">Pending</span>
+                        </div>
+                        
+                        <div class="card-body">
+                            <div style="background: var(--primary-light); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 1rem;">
+                                <strong><i class="fas fa-comment"></i> Reason for admin request:</strong>
+                                <p style="margin-top: 0.5rem;">{{ user.admin_request_reason|default:"No reason provided" }}</p>
+                            </div>
+
+                            <div style="background: #f8fafc; padding: 1rem; border-radius: var(--border-radius); margin-bottom: 1rem; border: 1px solid #d9e2ec;">
+                                <strong><i class="fas fa-id-card"></i> Submitted ID photo:</strong>
+                                {% if user.admin_request_id_photo %}
+                                    <div style="margin-top: 0.75rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                                        <a href="{{ user.admin_request_id_photo.url }}" target="_blank" rel="noopener">
+                                            <img
+                                                src="{{ user.admin_request_id_photo.url }}"
+                                                alt="{{ user.username }} ID photo"
+                                                style="width: 180px; max-width: 100%; height: auto; border-radius: 10px; border: 1px solid #cbd5e0;"
+                                            >
+                                        </a>
+                                        <a href="{{ user.admin_request_id_photo.url }}" target="_blank" rel="noopener" class="btn btn-primary">
+                                            <i class="fas fa-eye"></i> View Full Photo
+                                        </a>
+                                    </div>
+                                {% else %}
+                                    <p style="margin-top: 0.5rem; color: var(--danger-color);">No ID photo submitted.</p>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="admin-actions">
+                                <form method="post" action="{% url 'admin_request_approve' user.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="notes" value="Approved by admin">
+                                    <button type="submit" class="btn btn-secondary">
+                                        <i class="fa-solid fa-check"></i> Approve
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'admin_request_reject' user.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="notes" value="Rejected by admin">
+                                    <button type="submit" class="btn" style="background: var(--danger-color); color: white;">
+                                        <i class="fa-solid fa-xmark"></i> Reject
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="empty-state" style="text-align: center; padding: 3rem;">
+                        <i class="fas fa-check-circle" style="font-size: 3rem; color: var(--success-color); margin-bottom: 1rem;"></i>
+                        <h3>No Pending Requests</h3>
+                        <p style="color: var(--gray-color);">There are no admin requests waiting for review.</p>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Approved Requests -->
+            <div class="admin-panel" style="margin-bottom: 2rem;">
+                <h2><i class="fas fa-check-circle"></i> Approved Admins</h2>
+                
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Approved By</th>
+                                <th>Approved On</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in approved_requests %}
+                                <tr>
+                                    <td>
+                                        <div class="user-info">
+                                            <i class="fas fa-user-circle" style="font-size: 2rem; color: var(--primary-dark);"></i>
+                                            <strong>{{ user.username }}</strong>
+                                        </div>
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ user.admin_request_reviewed_by.username }}</td>
+                                    <td>{{ user.admin_request_review_date|date:"M d, Y H:i" }}</td>
+                                    <td>{{ user.admin_request_review_notes|default:"-" }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: var(--gray-color);">No approved admins yet.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Rejected Requests -->
+            <div class="admin-panel">
+                <h2><i class="fas fa-times-circle"></i> Rejected Requests</h2>
+                
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Rejected By</th>
+                                <th>Rejected On</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in rejected_requests %}
+                                <tr>
+                                    <td>
+                                        <div class="user-info">
+                                            <i class="fas fa-user-circle" style="font-size: 2rem; color: var(--gray-color);"></i>
+                                            <strong>{{ user.username }}</strong>
+                                        </div>
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ user.admin_request_reviewed_by.username }}</td>
+                                    <td>{{ user.admin_request_review_date|date:"M d, Y H:i" }}</td>
+                                    <td>{{ user.admin_request_review_notes|default:"-" }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: var(--gray-color);">No rejected requests.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <a href="{% url 'admin_dashboard' %}" class="logo" style="color: white;">
+                        <i class="fas fa-link"></i> Knot
+                    </a>
+                    <p>Tying Communities Together Through Shared Resources</p>
+                    <div class="social-links">
+                        <a href="https://facebook.com" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook"></i></a>
+                        <a href="https://x.com" target="_blank" rel="noopener noreferrer"><i class="fab fa-twitter"></i></a>
+                        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Knot. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/admin.js' %}"></script>
+
+    <script src="{% static 'js/admin-dropdown.js' %}"></script>
+</body>
+</html>
+
+

@@ -1,0 +1,521 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Item - Knot Admin</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .upload-dropzone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            background: #f8fafc;
+            padding: 1rem;
+            text-align: center;
+            transition: border-color 0.2s ease, background-color 0.2s ease;
+            cursor: pointer;
+        }
+        .upload-dropzone.drag-over {
+            border-color: #5a67d8;
+            background: #eef2ff;
+        }
+        .upload-dropzone p {
+            margin: 0;
+            color: #475569;
+            font-size: 0.92rem;
+        }
+        .upload-preview-list {
+            margin-top: 0.75rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 0.6rem;
+        }
+        .upload-preview-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 0.4rem;
+            background: #fff;
+        }
+        .upload-preview-item img {
+            width: 100%;
+            height: 82px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-bottom: 0.35rem;
+        }
+        .upload-preview-item span {
+            font-size: 0.75rem;
+            color: #475569;
+            display: block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .upload-feedback {
+            margin-top: 0.55rem;
+            font-size: 0.86rem;
+            color: #dc2626;
+        }
+        /* Custom Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.95);
+            }
+            to { 
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        .modal-box {
+            position: relative;
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease-out;
+        }
+        .modal-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        .modal-icon.danger {
+            background: rgba(220, 38, 38, 0.1);
+            color: #dc2626;
+        }
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #1f2937;
+        }
+        .modal-message {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+        .modal-btn {
+            padding: 0.625rem 1.25rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+        }
+        .modal-btn-cancel {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        .modal-btn-cancel:hover {
+            background: #e5e7eb;
+        }
+        .modal-btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+        .modal-btn-danger:hover {
+            background: #b91c1c;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar admin-navbar">
+        <div class="container nav-container">
+            <a href="{% url 'admin_dashboard' %}" class="logo">
+                <i class="fas fa-link"></i> Knot Admin
+            </a>
+            <ul class="nav-menu">
+                <li><a href="{% url 'admin_dashboard' %}"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="{% url 'admin_users' %}"><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="{% url 'admin_items' %}" class="active"><i class="fas fa-box"></i> Items</a></li>
+                <li><a href="{% url 'admin_suggestions' %}"><i class="fas fa-lightbulb"></i> Suggestions</a></li>
+                <li><a href="{% url 'admin_bookings' %}"><i class="fas fa-calendar-check"></i> Bookings</a></li>
+                <li><a href="{% url 'admin_request_list' %}"><i class="fas fa-user-shield"></i> Requests</a></li>
+                <li><a href="{% url 'admin_reports' %}"><i class="fas fa-chart-bar"></i> Reports</a></li>
+                <li class="auth-buttons">
+                    <div class="admin-user-dropdown">
+                        <button type="button" class="admin-user-toggle admin-user-pill" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-user-shield"></i>
+                            <span>{{ user.username }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="admin-dropdown-menu">
+                            <a href="{% url 'user_dashboard' %}" class="admin-user-action-link">
+                                <i class="fas fa-user"></i>
+                                <span>Switch to Member Panel</span>
+                            </a>
+                            <a href="{% url 'logout' %}" class="admin-user-action-link danger">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                            </a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+            <button class="hamburger" id="hamburger">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="page-header">
+        <div class="container">
+            <h1><i class="fas fa-edit"></i> Edit Item</h1>
+            <p>Update item details and availability settings</p>
+        </div>
+    </div>
+
+    <section class="dashboard">
+        <div class="container">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}" style="margin-bottom: 1rem;">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="admin-card" style="margin-bottom: 2rem;">
+                <div class="admin-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3><i class="fas fa-box"></i> {{ item.name }}</h3>
+                    <a href="{% url 'admin_items' %}" class="btn btn-outline">Back to Items</a>
+                </div>
+                <div class="admin-card-body">
+                    <div style="margin-bottom: 1.5rem;">
+                        <h4 style="margin-bottom: 0.75rem;"><i class="fas fa-images"></i> Current Images</h4>
+                        {% if item.images.all %}
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem;">
+                            {% for img in item.images.all %}
+                            <div style="border: 1px solid var(--light-gray); border-radius: 10px; padding: 0.65rem; background: #fff;">
+                                <img src="{{ img.image.url }}" alt="{{ item.name }} image" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 0.5rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    {% if img.is_primary %}
+                                        <span class="badge badge-success">Primary</span>
+                                    {% else %}
+                                        <span class="badge">Secondary</span>
+                                    {% endif %}
+                                </div>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    {% if not img.is_primary %}
+                                    <form method="post" style="display: inline; flex: 1;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="set_primary_image">
+                                        <input type="hidden" name="image_id" value="{{ img.id }}">
+                                        <button type="submit" class="btn btn-small btn-outline" style="width: 100%;">Set Primary</button>
+                                    </form>
+                                    {% endif %}
+                                    <form method="post" style="display: inline; flex: 1;" id="deleteImageForm{{ img.id }}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="delete_image">
+                                        <input type="hidden" name="image_id" value="{{ img.id }}">
+                                        <button type="button" class="btn btn-small btn-danger deleteImageBtn" style="width: 100%;" data-form-id="deleteImageForm{{ img.id }}">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p style="color: var(--gray-color); margin-bottom: 0;">No uploaded images for this item yet.</p>
+                        {% endif %}
+                    </div>
+
+                    <form method="post" enctype="multipart/form-data" style="display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1rem;">
+                        {% csrf_token %}
+                        <div>
+                            <label>Item Name</label>
+                            <input type="text" name="name" class="form-input" value="{{ item.name }}" required>
+                        </div>
+                        <div>
+                            <label>Category</label>
+                            <select name="category" class="form-select" required>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}" {% if item.category_id == category.id %}selected{% endif %}>{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label>Steward</label>
+                            <select name="steward" class="form-select">
+                                {% for steward in stewards %}
+                                <option value="{{ steward.id }}" {% if item.steward_id == steward.id %}selected{% endif %}>{{ steward.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label>Location</label>
+                            <input type="text" name="location_details" class="form-input" value="{{ item.location_details }}" required>
+                        </div>
+                        <div>
+                            <label>Condition</label>
+                            <select name="condition" class="form-select">
+                                <option value="new" {% if item.condition == 'new' %}selected{% endif %}>New</option>
+                                <option value="like_new" {% if item.condition == 'like_new' %}selected{% endif %}>Like New</option>
+                                <option value="good" {% if item.condition == 'good' %}selected{% endif %}>Good</option>
+                                <option value="fair" {% if item.condition == 'fair' %}selected{% endif %}>Fair</option>
+                                <option value="poor" {% if item.condition == 'poor' %}selected{% endif %}>Poor</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Status</label>
+                            <select name="status" class="form-select">
+                                <option value="available" {% if item.status == 'available' %}selected{% endif %}>Available</option>
+                                <option value="borrowed" {% if item.status == 'borrowed' %}selected{% endif %}>Borrowed</option>
+                                <option value="maintenance" {% if item.status == 'maintenance' %}selected{% endif %}>Under Maintenance</option>
+                                <option value="retired" {% if item.status == 'retired' %}selected{% endif %}>Retired</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Daily Rate (Ksh)</label>
+                            <input type="number" name="daily_rate" class="form-input" min="0" step="1" value="{{ item.daily_rate|default:'' }}">
+                        </div>
+                        <div>
+                            <label>Deposit (Ksh)</label>
+                            <input type="number" name="deposit_amount" class="form-input" min="0" step="1" value="{{ item.deposit_amount|default:'' }}">
+                        </div>
+                        <div>
+                            <label>Max Borrow Days</label>
+                            <input type="number" name="max_borrow_days" class="form-input" min="1" max="60" value="{{ item.max_borrow_days|default:14 }}" required>
+                        </div>
+                        <div>
+                            <label>Upload New Primary Image (optional)</label>
+                            <input type="file" name="primary_image" class="form-input" accept="image/*">
+                        </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label>Add More Images (optional)</label>
+                            <input type="file" id="additionalImagesInput" name="additional_images" class="form-input" accept="image/*" multiple style="display: none;">
+                            <div id="additionalImagesDropzone" class="upload-dropzone">
+                                <p><i class="fas fa-cloud-upload-alt"></i> Drag and drop images here, or click to select multiple files</p>
+                            </div>
+                            <small style="display:block; margin-top:0.45rem; color:#64748b;">Up to 12 total images per item. Allowed: JPG, PNG, WEBP. Max 5MB each.</small>
+                            <div id="uploadFeedback" class="upload-feedback"></div>
+                            <div id="additionalImagesPreview" class="upload-preview-list"></div>
+                        </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label>Tags (optional)</label>
+                            <input type="text" name="tags" class="form-input" value="{{ item.tags|default:'' }}" placeholder="e.g. camera, travel, outdoors">
+                        </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label>Description</label>
+                            <textarea name="description" class="form-input" rows="4" required>{{ item.description }}</textarea>
+                        </div>
+                        <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 0.75rem;">
+                            <a href="{% url 'admin_items' %}" class="btn btn-outline">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="{% static 'js/admin.js' %}"></script>
+    <script>
+        (function () {
+            const input = document.getElementById('additionalImagesInput');
+            const dropzone = document.getElementById('additionalImagesDropzone');
+            const preview = document.getElementById('additionalImagesPreview');
+            const feedback = document.getElementById('uploadFeedback');
+            const maxPerFileBytes = 5 * 1024 * 1024;
+            const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            const existingImageCount = Number('{{ item.images.count|default:0 }}');
+            const maxTotalImages = 12;
+
+            if (!input || !dropzone || !preview) {
+                return;
+            }
+
+            const setFeedback = (message) => {
+                if (feedback) {
+                    feedback.textContent = message || '';
+                }
+            };
+
+            const validateFiles = (fileList) => {
+                const files = Array.from(fileList || []);
+                if (existingImageCount + files.length > maxTotalImages) {
+                    setFeedback(`You can upload up to ${maxTotalImages - existingImageCount} more image(s) for this item.`);
+                    return null;
+                }
+
+                for (const file of files) {
+                    if (!allowedMimeTypes.includes(file.type)) {
+                        setFeedback(`Unsupported type for ${file.name}. Use JPG, PNG, or WEBP.`);
+                        return null;
+                    }
+                    if (file.size > maxPerFileBytes) {
+                        setFeedback(`${file.name} is too large. Max size is 5MB per image.`);
+                        return null;
+                    }
+                }
+
+                setFeedback('');
+                return files;
+            };
+
+            const renderPreview = (fileList) => {
+                preview.innerHTML = '';
+                Array.from(fileList).forEach((file) => {
+                    if (!file.type.startsWith('image/')) {
+                        return;
+                    }
+
+                    const item = document.createElement('div');
+                    item.className = 'upload-preview-item';
+
+                    const img = document.createElement('img');
+                    img.alt = file.name;
+
+                    const label = document.createElement('span');
+                    label.textContent = file.name;
+
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+
+                    item.appendChild(img);
+                    item.appendChild(label);
+                    preview.appendChild(item);
+                });
+            };
+
+            dropzone.addEventListener('click', () => input.click());
+
+            input.addEventListener('change', () => {
+                const validFiles = validateFiles(input.files);
+                if (!validFiles) {
+                    input.value = '';
+                    preview.innerHTML = '';
+                    return;
+                }
+                renderPreview(validFiles);
+            });
+
+            dropzone.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                dropzone.classList.add('drag-over');
+            });
+
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('drag-over');
+            });
+
+            dropzone.addEventListener('drop', (event) => {
+                event.preventDefault();
+                dropzone.classList.remove('drag-over');
+
+                const dt = event.dataTransfer;
+                if (!dt || !dt.files || dt.files.length === 0) {
+                    return;
+                }
+
+                const validFiles = validateFiles(dt.files);
+                if (!validFiles) {
+                    input.value = '';
+                    preview.innerHTML = '';
+                    return;
+                }
+
+                const dataTransfer = new DataTransfer();
+                validFiles.forEach((file) => dataTransfer.items.add(file));
+                input.files = dataTransfer.files;
+                renderPreview(input.files);
+            });
+        })();
+
+        // Handle delete image buttons
+        document.querySelectorAll('.deleteImageBtn').forEach((button) => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const formId = button.getAttribute('data-form-id');
+                showConfirmModal(
+                    'Delete Image',
+                    'Are you sure you want to delete this image? This action cannot be undone.',
+                    () => {
+                        document.getElementById(formId).submit();
+                    }
+                );
+            });
+        });
+
+        // Modal Functions
+        function showConfirmModal(title, message, onConfirm) {
+            const modal = document.getElementById('confirmModal');
+            const modalOverlay = document.getElementById('modalOverlay');
+            const modalTitle = modal.querySelector('.modal-title');
+            const modalMessage = modal.querySelector('.modal-message');
+            const confirmBtn = modal.querySelector('.modal-btn-danger');
+            const cancelBtn = modal.querySelector('.modal-btn-cancel');
+
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+
+            const closeModal = () => {
+                modalOverlay.classList.remove('active');
+            };
+
+            confirmBtn.onclick = () => {
+                closeModal();
+                onConfirm();
+            };
+            cancelBtn.onclick = closeModal;
+            modalOverlay.onclick = (e) => {
+                if (e.target === modalOverlay) closeModal();
+            };
+
+            modalOverlay.classList.add('active');
+        }
+    </script>
+
+    <!-- Modal Overlays -->
+    <div id="modalOverlay" class="modal-overlay">
+        <!-- Confirm Modal -->
+        <div id="confirmModal" class="modal-box">
+            <div class="modal-icon danger"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 class="modal-title">Confirm Action</h3>
+            <p class="modal-message">Are you sure?</p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel">Cancel</button>
+                <button class="modal-btn modal-btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
+    <script src="{% static 'js/admin-dropdown.js' %}"></script>
+</body>
+</html>
+
+

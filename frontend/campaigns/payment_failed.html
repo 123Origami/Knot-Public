@@ -1,0 +1,18 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Failed - Knot</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+<body>
+    <div class="container" style="max-width: 500px; margin: 50px auto;">
+        <div class="card" style="text-align: center;">
+            <i class="fas fa-times-circle" style="font-size: 64px; color: #fc8181;"></i>
+            <h2>Payment Failed</h2>
+            <p>There was an issue processing your payment. Please try again.</p>
+            <a href="{% url 'goals' %}" class="btn btn-primary">Back to Community Goals</a>
+        </div>
+    </div>
+</body>
+</html>

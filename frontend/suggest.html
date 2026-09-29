@@ -1,0 +1,847 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Suggest Item - Knot</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="{% if user.is_authenticated %}{% url 'user_dashboard' %}{% else %}{% url 'index' %}{% endif %}" class="logo">
+                <i class="fas fa-link"></i> Knot
+            </a>
+            <ul class="nav-menu">
+                {% if user.is_authenticated %}
+                    <li><a href="{% url 'user_dashboard' %}">Dashboard</a></li>
+                {% else %}
+                    <li><a href="{% url 'index' %}">Home</a></li>
+                {% endif %}
+                <li><a href="{% url 'browse' %}">Browse Items</a></li>
+                <li><a href="{% url 'suggest' %}" class="active">Suggest Item</a></li>
+                <li><a href="{% url 'goals' %}">Community Goals</a></li>
+                <li class="auth-buttons">
+                    {% if user.is_authenticated %}
+                        <div class="user-dropdown">
+                           {% if user.profile_picture %}
+                           <img src="{{ user.profile_picture.url }}"
+                               alt="{{ user.username }}" class="user-avatar">
+                           {% else %}
+                            <img src="https://ui-avatars.com/api/?name={{ user.username }}&background=ffebf3&color=2d3748"
+                                 alt="{{ user.username }}" class="user-avatar">
+                           {% endif %}
+                            <span class="user-name">{{ user.username }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                            <div class="dropdown-menu">
+                                {% if user.is_admin_approved %}
+                                    <a href="{% url 'admin_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</a>
+                                {% else %}
+                                    <a href="{% url 'user_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                                {% endif %}
+                                <a href="{% url 'profile' %}"><i class="fas fa-user"></i> Profile</a>
+                                <div class="dropdown-toggle-row">
+                                    <span><i class="fas fa-moon"></i> Dark Mode</span>
+                                    <label class="switch switch-compact" for="darkModeToggle">
+                                        <input type="checkbox" id="darkModeToggle">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn-login">Login</a>
+                        <a href="{% url 'signup' %}" class="btn-signup">Sign Up</a>
+                    {% endif %}
+                </li>
+            </ul>
+            <button class="hamburger" id="hamburger">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Suggest Header -->
+    <section class="page-header">
+        <div class="container">
+            <h1>Suggest a Community Item</h1>
+            <p>Help grow our shared resources by suggesting items the community needs</p>
+            </div>
+    </section>
+
+    <!-- Suggest Container -->
+    <section class="suggest-container">
+        <div class="container">
+            <div class="suggest-layout">
+                <!-- Suggestion Form -->
+                <div class="suggest-form-container">
+                    <div class="suggest-form-card">
+                        <div class="form-header">
+                            <h2><i class="fas fa-lightbulb"></i> Suggest New Item</h2>
+                            <p>Fill out the form below to suggest an item for the community</p>
+                        </div>
+                        
+                        <form id="suggestionForm">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label>Item Name</label>
+                                <input type="text" class="form-input" id="suggestionName" name="name"
+                                       placeholder="e.g., Professional Photography Studio Kit" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Category</label>
+                                <select class="form-input" id="suggestionCategory" name="category_name" required>
+                                    <option value="">Select Category</option>
+                                    <option value="Tools & Equipment">Tools & Equipment</option>
+                                    <option value="Technology & Electronics">Technology & Electronics</option>
+                                    <option value="Outdoor & Recreation">Outdoor & Recreation</option>
+                                    <option value="Home & Garden">Home & Garden</option>
+                                    <option value="Sports & Fitness">Sports & Fitness</option>
+                                    <option value="Entertainment">Entertainment</option>
+                                    <option value="Professional Services">Professional Services</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Why is this item needed?</label>
+                                <textarea class="form-textarea" id="suggestionDescription" name="description" rows="3"
+                                          placeholder="Explain why this item would benefit the community..." required></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Estimated Cost (Optional)</label>
+                                <div class="input-with-prefix">
+                                    <span class="input-prefix">Ksh</span>
+                                     <input type="number" class="form-input" id="estimatedCost" name="estimated_cost"
+                                         placeholder="Approximate purchase price" min="0.01" step="any">
+                                </div>
+                                <small class="form-help">This helps us understand if a community goal is needed</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Suggested Rental Price (Optional)</label>
+                                <div class="input-with-prefix">
+                                    <span class="input-prefix">Ksh</span>
+                                    <input type="number" class="form-input" 
+                                         placeholder="Per day" min="0.01" step="any">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Priority Level</label>
+                                <div class="priority-options">
+                                    <label class="priority-option">
+                                        <input type="radio" name="priority" value="low">
+                                        <div class="priority-content">
+                                            <i class="fas fa-arrow-down"></i>
+                                            <span>Low Priority</span>
+                                            <small>Nice to have</small>
+                                        </div>
+                                    </label>
+                                    <label class="priority-option">
+                                        <input type="radio" name="priority" value="medium" checked>
+                                        <div class="priority-content">
+                                            <i class="fas fa-arrows-alt-h"></i>
+                                            <span>Medium Priority</span>
+                                            <small>Would be useful</small>
+                                        </div>
+                                    </label>
+                                    <label class="priority-option">
+                                        <input type="radio" name="priority" value="high">
+                                        <div class="priority-content">
+                                            <i class="fas fa-arrow-up"></i>
+                                            <span>High Priority</span>
+                                            <small>Community needs this</small>
+                                        </div>
+                                    </label>
+                                    <label class="priority-option">
+                                        <input type="radio" name="priority" value="urgent">
+                                        <div class="priority-content">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                            <span>Urgent</span>
+                                            <small>Immediate need</small>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Upload Reference Images (Optional)</label>
+                                <div class="image-upload-area" id="imageUploadArea">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <p>Drag & drop images or <span>browse</span></p>
+                                    <small>Supported formats: JPG, PNG, GIF (Max 5MB each). The first image is used for the goal photo.</small>
+                                    <input type="file" id="imageUpload" multiple accept="image/*">
+                                </div>
+                                <div class="image-preview" id="imagePreview"></div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Your Contact Email</label>
+                                <input type="email" class="form-input" id="contactEmail" name="contact_email"
+                                    placeholder="We'll notify you about your suggestion" value="{{ user.email|default:'' }}">
+                            </div>
+                            
+                            <div class="form-group form-checkbox">
+                                <input type="checkbox" id="willingToContribute" name="willingToContribute">
+                                <label for="willingToContribute">
+                                    I'm willing to contribute financially if this becomes a community goal
+                                </label>
+                            </div>
+                            
+                            <div class="form-group form-checkbox">
+                                <input type="checkbox" id="shareContact" name="shareContact">
+                                <label for="shareContact">
+                                    Allow community members to contact me about this suggestion
+                                </label>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane"></i> Submit Suggestion
+                                </button>
+                                <button type="button" class="btn btn-outline" onclick="clearForm()">
+                                    <i class="fas fa-redo"></i> Clear Form
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Sidebar -->
+                <div class="suggest-sidebar">
+                    <!-- Voting Section -->
+                    <div class="sidebar-card">
+                        <h3><i class="fas fa-vote-yea"></i> Vote on Suggestions</h3>
+                        <p>Help decide what items the community should acquire next</p>
+                        
+                        <div class="voting-list" id="suggestionList">
+                            {% for suggestion in suggestions %}
+                            {% if suggestion.status != 'pending' %}
+                            <div class="voting-item">
+                                <div class="voting-content">
+                                    <h4>{{ suggestion.name }}</h4>
+                                    <p>{{ suggestion.description }}</p>
+                                    <div class="voting-stats">
+                                        <span class="votes-count">{{ suggestion.votes }} votes</span>
+                                        <span class="votes-percentage">{{ suggestion.category.name|default:"General" }} • {% if suggestion.status == 'campaign_created' %}Campaign Created{% elif suggestion.status == 'approved' %}Approved{% else %}{{ suggestion.status }}{% endif %}</span>
+                                    </div>
+                                </div>
+                                <button class="btn-vote" data-suggestion-id="{{ suggestion.id }}">
+                                    <i class="fas fa-thumbs-up"></i> Vote
+                                </button>
+                            </div>
+                            {% else %}
+                            <div class="voting-item">
+                                <div class="voting-content">
+                                    <h4>{{ suggestion.name }}</h4>
+                                    <p>{{ suggestion.description }}</p>
+                                    <div class="voting-stats">
+                                        <span class="votes-count">Awaiting admin approval</span>
+                                        <span class="votes-percentage">{{ suggestion.category.name|default:"General" }} • Pending</span>
+                                    </div>
+                                </div>
+                                <button class="btn-vote" type="button" disabled aria-disabled="true">
+                                    <i class="fas fa-lock"></i> Locked
+                                </button>
+                            </div>
+                            {% endif %}
+                            {% empty %}
+                            <div class="voting-item">
+                                <div class="voting-content">
+                                    <h4>No approved suggestions yet</h4>
+                                    <p>New suggestions are reviewed by an admin before voting opens.</p>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Guidelines -->
+                    <div class="sidebar-card">
+                        <h3><i class="fas fa-info-circle"></i> Suggestion Guidelines</h3>
+                        <ul class="guidelines-list">
+                            <li><i class="fas fa-check"></i> Suggest items that benefit multiple people</li>
+                            <li><i class="fas fa-check"></i> Consider storage and maintenance needs</li>
+                            <li><i class="fas fa-check"></i> Research approximate costs if possible</li>
+                            <li><i class="fas fa-check"></i> Check if similar items already exist</li>
+                            <li><i class="fas fa-check"></i> Be specific about the item's purpose</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Top Suggested Items -->
+                    <div class="sidebar-card">
+                        <h3><i class="fas fa-trophy"></i> Most Popular Suggestions</h3>
+                        <ol class="top-suggestions" id="topSuggestions">
+                            {% for suggestion in top_suggestions %}
+                            <li>
+                                <span class="rank">{{ forloop.counter }}</span>
+                                <div class="suggestion-info">
+                                    <strong>{{ suggestion.name }}</strong>
+                                    <small>{{ suggestion.votes }} votes</small>
+                                </div>
+                            </li>
+                            {% empty %}
+                            <li>
+                                <div class="suggestion-info">
+                                    <strong>No approved suggestions yet</strong>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ol>
+                    </div>
+
+                    <div class="sidebar-card">
+                        <h3><i class="fas fa-user"></i> My Suggestions</h3>
+                        <div class="voting-list" id="mySuggestionsList">
+                            {% for suggestion in my_suggestions %}
+                            <div class="voting-item">
+                                <div class="voting-content">
+                                    <h4>{{ suggestion.name }}</h4>
+                                    <p>
+                                        {% if suggestion.status == 'pending' %}
+                                            Awaiting admin approval
+                                        {% elif suggestion.status == 'rejected' %}
+                                            <span class="status-badge status-rejected">Rejected by admin</span> • {{ suggestion.votes }} votes
+                                        {% elif suggestion.status == 'campaign_created' %}
+                                            Campaign Created • {{ suggestion.votes }} votes
+                                        {% elif suggestion.status == 'approved' %}
+                                            Approved • {{ suggestion.votes }} votes
+                                        {% else %}
+                                            {{ suggestion.get_status_display }} • {{ suggestion.votes }} votes
+                                        {% endif %}
+                                    </p>
+                                    <div class="voting-stats">
+                                        <span class="votes-count">Submitted {{ suggestion.created_at|date:"M j, Y" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="voting-item">
+                                <div class="voting-content">
+                                    <h4>No submissions yet</h4>
+                                    <p>Your suggestions will appear here after you submit.</p>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Suggestions Timeline -->
+    <section class="suggestions-timeline">
+        <div class="container">
+            <h2 class="section-title">Suggestion Status</h2>
+            <div class="timeline" id="suggestionsTimelineList">
+                {% for suggestion in timeline_suggestions %}
+                <div class="timeline-item">
+                    <div class="timeline-icon {% if suggestion.status == 'approved' %}approved{% elif suggestion.status == 'campaign_created' %}goal{% elif suggestion.status == 'rejected' %}pending{% else %}pending{% endif %}">
+                        {% if suggestion.status == 'approved' %}
+                        <i class="fas fa-check"></i>
+                        {% elif suggestion.status == 'campaign_created' %}
+                        <i class="fas fa-bullseye"></i>
+                        {% elif suggestion.status == 'rejected' %}
+                        <i class="fas fa-times"></i>
+                        {% else %}
+                        <i class="fas fa-clock"></i>
+                        {% endif %}
+                    </div>
+                    <div class="timeline-content">
+                        <h4>{{ suggestion.name }}</h4>
+                        <p>
+                            {% if suggestion.status == 'approved' %}
+                            Suggestion approved by admin
+                            {% elif suggestion.status == 'campaign_created' %}
+                            Converted into a community goal campaign
+                            {% elif suggestion.status == 'rejected' %}
+                            Suggestion was declined by admin
+                            {% else %}
+                            Under review by community admins
+                            {% endif %}
+                        </p>
+                        <span class="timeline-date">{{ suggestion.updated_at|date:"F j, Y" }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="timeline-item">
+                    <div class="timeline-icon pending">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <h4>No suggestion activity yet</h4>
+                        <p>Submitted suggestions will appear here with their latest status.</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <a href="{% url 'index' %}" class="logo">
+                        <i class="fas fa-link"></i> Knot
+                    </a>
+                    <p>Tying Communities Together Through Shared Resources</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/app.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const suggestionForm = document.getElementById('suggestionForm');
+            const suggestionList = document.getElementById('suggestionList');
+            const topSuggestions = document.getElementById('topSuggestions');
+            const mySuggestionsList = document.getElementById('mySuggestionsList');
+            const suggestionsTimelineList = document.getElementById('suggestionsTimelineList');
+            const currentUsername = "{{ request.user.username|escapejs }}";
+
+            // Image upload
+            const imageUpload = document.getElementById('imageUpload');
+            const imagePreview = document.getElementById('imagePreview');
+            const uploadArea = document.getElementById('imageUploadArea');
+            const apiBase = '/api/items/suggestions/';
+            
+            uploadArea.addEventListener('click', () => imageUpload.click());
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                handleFiles(files);
+            });
+            
+            imageUpload.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+            });
+            
+            function handleFiles(files) {
+                imagePreview.innerHTML = '';
+                for (let i = 0; i < Math.min(files.length, 5); i++) {
+                    const file = files[i];
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const img = document.createElement('div');
+                            img.className = 'preview-image';
+                            img.innerHTML = `
+                                <img src="${e.target.result}" alt="Preview">
+                                <button type="button" class="remove-image">&times;</button>
+                            `;
+                            img.querySelector('.remove-image').addEventListener('click', function() {
+                                img.remove();
+                            });
+                            imagePreview.appendChild(img);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }
+            }
+
+            function getCookie(name) {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) {
+                    return parts.pop().split(';').shift();
+                }
+                return '';
+            }
+
+            function getCsrfToken() {
+                const cookieToken = getCookie('csrftoken');
+                if (cookieToken) {
+                    return cookieToken;
+                }
+
+                const hiddenToken = suggestionForm.querySelector('input[name="csrfmiddlewaretoken"]');
+                return hiddenToken ? hiddenToken.value : '';
+            }
+
+            function escapeHtml(text) {
+                if (!text) return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            function renderTopSuggestions(suggestions) {
+                topSuggestions.innerHTML = '';
+                const voteableSuggestions = suggestions.filter((suggestion) => suggestion.status !== 'pending');
+                const topThree = voteableSuggestions.slice(0, 3);
+
+                if (!topThree.length) {
+                    topSuggestions.innerHTML = '<li><div class="suggestion-info"><strong>No approved suggestions yet</strong><small>Voting opens after admin approval.</small></div></li>';
+                    return;
+                }
+
+                topThree.forEach((suggestion, index) => {
+                    const row = document.createElement('li');
+                    row.innerHTML = `
+                        <span class="rank">${index + 1}</span>
+                        <div class="suggestion-info">
+                            <strong>${escapeHtml(suggestion.name)}</strong>
+                            <small>${suggestion.votes} votes</small>
+                        </div>
+                    `;
+                    topSuggestions.appendChild(row);
+                });
+            }
+
+            function renderSuggestions(suggestions) {
+                suggestionList.innerHTML = '';
+
+                const voteableSuggestions = suggestions.filter((suggestion) => suggestion.status !== 'pending');
+                const pendingSuggestions = suggestions.filter((suggestion) => suggestion.status === 'pending');
+
+                if (!voteableSuggestions.length) {
+                    suggestionList.innerHTML = `
+                        <div class="voting-item">
+                            <div class="voting-content">
+                                <h4>No approved suggestions yet</h4>
+                                <p>New suggestions are reviewed by an admin before voting opens.</p>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                voteableSuggestions.forEach((suggestion) => {
+                    const votingItem = document.createElement('div');
+                    votingItem.className = 'voting-item';
+                    const votedClass = suggestion.user_has_voted ? 'voted' : '';
+                    const voteIcon = suggestion.user_has_voted ? 'check' : 'thumbs-up';
+                    const voteLabel = suggestion.user_has_voted ? 'Voted' : 'Vote';
+                    const categoryText = suggestion.category_name || 'General';
+
+                    votingItem.innerHTML = `
+                        <div class="voting-content">
+                            <h4>${escapeHtml(suggestion.name)}</h4>
+                            <p>${escapeHtml(suggestion.description)}</p>
+                            <div class="voting-stats">
+                                <span class="votes-count">${suggestion.votes} votes</span>
+                                <span class="votes-percentage">${escapeHtml(categoryText)} • ${suggestion.status === 'campaign_created' ? 'Campaign Created' : suggestion.status === 'approved' ? 'Approved' : escapeHtml(suggestion.status)}</span>
+                            </div>
+                        </div>
+                        <button class="btn-vote ${votedClass}" data-suggestion-id="${suggestion.id}">
+                            <i class="fas fa-${voteIcon}"></i> ${voteLabel}
+                        </button>
+                    `;
+
+                    suggestionList.appendChild(votingItem);
+                });
+
+                pendingSuggestions.forEach((suggestion) => {
+                    const votingItem = document.createElement('div');
+                    votingItem.className = 'voting-item';
+                    votingItem.innerHTML = `
+                        <div class="voting-content">
+                            <h4>${escapeHtml(suggestion.name)}</h4>
+                            <p>${escapeHtml(suggestion.description)}</p>
+                            <div class="voting-stats">
+                                <span class="votes-count">Awaiting admin approval</span>
+                                <span class="votes-percentage">${escapeHtml(suggestion.category_name || 'General')} • Pending</span>
+                            </div>
+                        </div>
+                        <button class="btn-vote" type="button" disabled aria-disabled="true">
+                            <i class="fas fa-lock"></i> Locked
+                        </button>
+                    `;
+
+                    suggestionList.appendChild(votingItem);
+                });
+            }
+
+            function renderTimelineSuggestions(suggestions) {
+                suggestionsTimelineList.innerHTML = '';
+
+                if (!suggestions.length) {
+                    suggestionsTimelineList.innerHTML = `
+                        <div class="timeline-item">
+                            <div class="timeline-icon pending">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h4>No suggestion activity yet</h4>
+                                <p>Submitted suggestions will appear here with their latest status.</p>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const latest = [...suggestions]
+                    .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
+                    .slice(0, 6);
+
+                latest.forEach((suggestion) => {
+                    let iconClass = 'pending';
+                    let icon = 'clock';
+                    let statusText = 'Under review by community admins';
+
+                    if (suggestion.status === 'approved') {
+                        iconClass = 'approved';
+                        icon = 'check';
+                        statusText = 'Suggestion approved by admin';
+                    } else if (suggestion.status === 'campaign_created') {
+                        iconClass = 'goal';
+                        icon = 'bullseye';
+                        statusText = 'Converted into a community goal campaign';
+                    } else if (suggestion.status === 'rejected') {
+                        iconClass = 'pending';
+                        icon = 'times';
+                        statusText = 'Suggestion was declined by admin';
+                    }
+
+                    const dateText = new Date(suggestion.updated_at || suggestion.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                    });
+
+                    const row = document.createElement('div');
+                    row.className = 'timeline-item';
+                    row.innerHTML = `
+                        <div class="timeline-icon ${iconClass}">
+                            <i class="fas fa-${icon}"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h4>${escapeHtml(suggestion.name)}</h4>
+                            <p>${escapeHtml(statusText)}</p>
+                            <span class="timeline-date">${escapeHtml(dateText)}</span>
+                        </div>
+                    `;
+                    suggestionsTimelineList.appendChild(row);
+                });
+            }
+
+            function renderMySuggestions(suggestions) {
+                mySuggestionsList.innerHTML = '';
+                const mine = suggestions
+                    .filter((suggestion) => (suggestion.suggested_by_username || '').toLowerCase() === currentUsername.toLowerCase())
+                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+                if (!mine.length) {
+                    mySuggestionsList.innerHTML = `
+                        <div class="voting-item">
+                            <div class="voting-content">
+                                <h4>No submissions yet</h4>
+                                <p>Your suggestions will appear here after you submit.</p>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                mine.slice(0, 5).forEach((suggestion) => {
+                    const createdDate = new Date(suggestion.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                    });
+                    const progressText = suggestion.status === 'pending'
+                        ? 'Awaiting admin approval'
+                        : suggestion.status === 'rejected'
+                            ? `<span class="status-badge status-rejected">Rejected by admin</span> • ${suggestion.votes} votes`
+                            : `${suggestion.status === 'campaign_created' ? 'Campaign Created' : suggestion.status === 'approved' ? 'Approved' : escapeHtml(suggestion.get_status_display || suggestion.status)} • ${suggestion.votes} votes`;
+
+                    const row = document.createElement('div');
+                    row.className = 'voting-item';
+                    row.innerHTML = `
+                        <div class="voting-content">
+                            <h4>${escapeHtml(suggestion.name)}</h4>
+                            <p>${progressText}</p>
+                            <div class="voting-stats">
+                                <span class="votes-count">Submitted ${escapeHtml(createdDate)}</span>
+                            </div>
+                        </div>
+                    `;
+                    mySuggestionsList.appendChild(row);
+                });
+            }
+
+            async function loadSuggestions() {
+                try {
+                    const response = await fetch(apiBase, {
+                        credentials: 'same-origin',
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Could not load suggestions.');
+                    }
+
+                    const data = await response.json();
+                    const allSuggestions = data.results || [];
+                    const suggestions = [...allSuggestions].sort((a, b) => b.votes - a.votes);
+                    renderSuggestions(suggestions);
+                    renderTopSuggestions(suggestions);
+                    renderTimelineSuggestions(allSuggestions);
+                    renderMySuggestions(allSuggestions);
+                } catch (error) {
+                    suggestionList.innerHTML = `
+                        <div class="voting-item">
+                            <div class="voting-content">
+                                <h4>Unable to load suggestions</h4>
+                                <p>Please refresh and try again.</p>
+                            </div>
+                        </div>
+                    `;
+                    mySuggestionsList.innerHTML = suggestionList.innerHTML;
+                    showNotification(error.message, 'error');
+                }
+            }
+
+            suggestionList.addEventListener('click', async function(event) {
+                const voteButton = event.target.closest('.btn-vote');
+                if (!voteButton) {
+                    return;
+                }
+
+                const suggestionId = voteButton.getAttribute('data-suggestion-id');
+                if (!suggestionId) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${apiBase}${suggestionId}/vote/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCsrfToken(),
+                        },
+                        credentials: 'same-origin',
+                    });
+
+                    if (response.status === 401 || response.status === 403) {
+                        showNotification('Please login to vote on suggestions.', 'warning');
+                        window.location.href = '/login/';
+                        return;
+                    }
+
+                    if (!response.ok) {
+                        throw new Error('Failed to update vote.');
+                    }
+
+                    const payload = await response.json();
+                    showNotification(payload.message || 'Vote updated.', 'success');
+                    loadSuggestions();
+                } catch (error) {
+                    showNotification(error.message, 'error');
+                }
+            });
+
+            // Form submission
+            suggestionForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const payload = new FormData();
+                payload.append('name', document.getElementById('suggestionName').value.trim());
+                payload.append('category_name', document.getElementById('suggestionCategory').value.trim());
+                payload.append('description', document.getElementById('suggestionDescription').value.trim());
+                payload.append('estimated_cost', document.getElementById('estimatedCost').value || 0);
+                if (imageUpload.files && imageUpload.files[0]) {
+                    payload.append('image', imageUpload.files[0]);
+                }
+
+                try {
+                    const response = await fetch(apiBase, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCsrfToken(),
+                        },
+                        credentials: 'same-origin',
+                        body: payload,
+                    });
+
+                    if (response.status === 401 || response.status === 403) {
+                        showNotification('Please login to submit a suggestion.', 'warning');
+                        window.location.href = '/login/';
+                        return;
+                    }
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        const firstError = Object.values(errorData)[0];
+                        throw new Error(Array.isArray(firstError) ? firstError[0] : 'Failed to submit suggestion.');
+                    }
+
+                    showNotification('Suggestion submitted for admin review.', 'success');
+                    this.reset();
+                    imagePreview.innerHTML = '';
+                    document.querySelectorAll('.priority-option input').forEach(input => {
+                        if (input.value === 'medium') input.checked = true;
+                    });
+                    loadSuggestions();
+                } catch (error) {
+                    showNotification(error.message, 'error');
+                }
+            });
+
+            loadSuggestions();
+            
+            // Auto-refresh suggestions every 30 seconds to detect deletions
+            setInterval(loadSuggestions, 30000);
+        });
+
+        function showNotification(message, type) {
+            const existing = document.querySelector('.suggest-toast');
+            if (existing) {
+                existing.remove();
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `suggest-toast ${type}`;
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.right = '20px';
+            toast.style.zIndex = '9999';
+            toast.style.padding = '0.9rem 1rem';
+            toast.style.borderRadius = '8px';
+            toast.style.color = '#fff';
+            toast.style.maxWidth = '320px';
+            toast.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.15)';
+            toast.style.backgroundColor = type === 'success' ? '#2f855a' : type === 'warning' ? '#dd6b20' : type === 'error' ? '#c53030' : '#4a5568';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3200);
+        }
+        
+        function clearForm() {
+            if (confirm('Are you sure you want to clear the form?')) {
+                document.getElementById('suggestionForm').reset();
+                document.getElementById('imagePreview').innerHTML = '';
+                showNotification('Form cleared', 'info');
+            }
+        }
+    </script>
+</body>
+</html>

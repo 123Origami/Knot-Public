@@ -1,0 +1,424 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Items - Knot</title>
+    <script src="{% static 'js/theme-bootstrap.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="{% if user.is_authenticated %}{% url 'user_dashboard' %}{% else %}{% url 'index' %}{% endif %}" class="logo">
+                <i class="fas fa-link"></i> Knot
+            </a>
+            <ul class="nav-menu">
+                {% if user.is_authenticated %}
+                    <li><a href="{% url 'user_dashboard' %}">Dashboard</a></li>
+                {% else %}
+                    <li><a href="{% url 'index' %}">Home</a></li>
+                {% endif %}
+                <li><a href="{% url 'browse' %}" class="active">Browse Items</a></li>
+                <li><a href="{% url 'suggest' %}">Suggest Item</a></li>
+                <li><a href="{% url 'goals' %}">Community Goals</a></li>
+                <li class="auth-buttons">
+                    {% if user.is_authenticated %}
+                        <div class="user-dropdown">
+                           {% if user.profile_picture %}
+                           <img src="{{ user.profile_picture.url }}" 
+                               alt="{{ user.username }}" class="user-avatar">
+                           {% else %}
+                            <img src="https://ui-avatars.com/api/?name={{ user.username }}&background=ffebf3&color=2d3748" 
+                                 alt="{{ user.username }}" class="user-avatar">
+                           {% endif %}
+                            <span class="user-name">{{ user.username }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                            <div class="dropdown-menu">
+                                <a href="{% url 'user_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                                <a href="{% url 'profile' %}"><i class="fas fa-user"></i> Profile</a>
+                                <div class="dropdown-toggle-row">
+                                    <span><i class="fas fa-moon"></i> Dark Mode</span>
+                                    <label class="switch switch-compact" for="darkModeToggle">
+                                        <input type="checkbox" id="darkModeToggle">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn-login">Login</a>
+                        <a href="{% url 'signup' %}" class="btn-signup">Sign Up</a>
+                    {% endif %}
+                </li>
+            </ul>
+            <button class="hamburger" id="hamburger">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Browse Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1>Browse Community Items</h1>
+            <p>Access tools, equipment, and technology shared by your community</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <section class="filters">
+        <div class="container">
+            <div class="filter-container">
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Search for items..." class="form-input">
+                    <button class="btn btn-primary" id="searchBtn"><i class="fas fa-search"></i></button>
+                </div>
+                <div class="filter-options">
+                    <select id="categoryFilter" class="form-select">
+                        <option value="">All Categories</option>
+                    </select>
+                    <select id="sortFilter" class="form-select">
+                        <option value="-created_at">Newest First</option>
+                        <option value="daily_rate">Price: Low to High</option>
+                        <option value="-daily_rate">Price: High to Low</option>
+                        <option value="-total_bookings">Most Popular</option>
+                    </select>
+                    <button id="clearFilters" class="btn btn-outline">Clear Filters</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Items Grid -->
+    <section class="items-section">
+        <div class="container">
+            <div class="items-header">
+    <h2 id="itemsCount">Loading items...</h2>
+</div>
+            <div class="items-grid" id="itemsGrid">
+                <div class="loading" style="text-align: center; padding: 3rem;">
+                    <div class="spinner"></div>
+                    <p>Loading items...</p>
+                </div>
+            </div>
+            <div class="pagination" id="pagination" style="display: none;">
+                <button class="btn btn-outline" id="prevPage"><i class="fas fa-chevron-left"></i> Previous</button>
+                <span id="pageInfo">Page 1</span>
+                <button class="btn btn-outline" id="nextPage">Next <i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <a href="{% url 'index' %}" class="logo" style="color: white;">
+                        <i class="fas fa-link"></i> Knot
+                    </a>
+                    <p>Tying Communities Together Through Shared Resources</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Knot Platform. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+    // Browse Items Page JavaScript
+let currentPage = 1;
+let currentSearch = '';
+let currentCategory = '';
+let currentSort = '-created_at';
+let totalPages = 1;
+
+// Load categories on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadCategories();
+    loadItems();
+    
+    // Event listeners
+    const searchBtn = document.getElementById('searchBtn');
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const sortFilter = document.getElementById('sortFilter');
+    const clearFilters = document.getElementById('clearFilters');
+    const prevPage = document.getElementById('prevPage');
+    const nextPage = document.getElementById('nextPage');
+    
+    if (searchBtn) {
+        searchBtn.addEventListener('click', function() {
+            currentSearch = searchInput.value;
+            currentPage = 1;
+            loadItems();
+        });
+    }
+    
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                currentSearch = this.value;
+                currentPage = 1;
+                loadItems();
+            }
+        });
+    }
+    
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', function() {
+            currentCategory = this.value;
+            currentPage = 1;
+            loadItems();
+        });
+    }
+    
+    if (sortFilter) {
+        sortFilter.addEventListener('change', function() {
+            currentSort = this.value;
+            currentPage = 1;
+            loadItems();
+        });
+    }
+    
+    if (clearFilters) {
+        clearFilters.addEventListener('click', function() {
+            if (searchInput) searchInput.value = '';
+            if (categoryFilter) categoryFilter.value = '';
+            if (sortFilter) sortFilter.value = '-created_at';
+            currentSearch = '';
+            currentCategory = '';
+            currentSort = '-created_at';
+            currentPage = 1;
+            loadItems();
+        });
+    }
+    
+    if (prevPage) {
+        prevPage.addEventListener('click', function() {
+            if (currentPage > 1) {
+                currentPage--;
+                loadItems();
+            }
+        });
+    }
+    
+    if (nextPage) {
+        nextPage.addEventListener('click', function() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                loadItems();
+            }
+        });
+    }
+    
+    // Event delegation for dynamically created buttons
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('js-retry-load')) {
+            loadItems();
+        }
+        if (e.target.classList.contains('js-quick-book')) {
+            const itemId = e.target.getAttribute('data-item-id');
+            const itemSlug = e.target.getAttribute('data-item-slug');
+            quickBook(itemId, itemSlug);
+        }
+    });
+});
+
+// Load categories for filter dropdown
+async function loadCategories() {
+    try {
+        const response = await fetch('/api/items/categories/');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const categories = await response.json();
+        const select = document.getElementById('categoryFilter');
+        
+        if (select) {
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.slug;
+                option.textContent = category.name;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading categories:', error);
+    }
+}
+
+// Load items with filters
+async function loadItems() {
+    const grid = document.getElementById('itemsGrid');
+    if (!grid) return;
+    
+    // Show loading spinner
+    grid.innerHTML = '<div class="loading" style="text-align: center; padding: 3rem;"><div class="spinner"></div><p>Loading items...</p></div>';
+    
+    // Build URL with filters
+    let url = `/api/items/items/?page=${currentPage}&sort=${currentSort}`;
+    if (currentSearch) {
+        url += `&search=${encodeURIComponent(currentSearch)}`;
+    }
+    if (currentCategory) {
+        url += `&category=${currentCategory}`;
+    }
+    
+    try {
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Get items from response (handle both paginated and non-paginated)
+        const items = data.results || data;
+        
+        // Update items count
+        const itemsCount = document.getElementById('itemsCount');
+        if (itemsCount) {
+            itemsCount.textContent = `${items.length} Items Available`;
+        }
+        
+        // Update pagination
+        const totalItems = data.count || items.length;
+        totalPages = Math.ceil(totalItems / 20) || 1;
+        
+        const pageInfo = document.getElementById('pageInfo');
+        if (pageInfo) {
+            pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+        }
+        
+        const pagination = document.getElementById('pagination');
+        if (pagination) {
+            pagination.style.display = totalPages > 1 ? 'flex' : 'none';
+        }
+        
+        // Render items or show empty state
+        if (items && items.length > 0) {
+            renderItems(items);
+        } else {
+            grid.innerHTML = `
+                <div style="text-align: center; padding: 3rem;">
+                    <i class="fas fa-box-open" style="font-size: 3rem; color: var(--gray-color);"></i>
+                    <h3>No items found</h3>
+                    <p>Try adjusting your filters or check back later.</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading items:', error);
+        grid.innerHTML = `
+            <div style="text-align: center; padding: 3rem; color: var(--danger-color);">
+                <i class="fas fa-exclamation-circle" style="font-size: 2rem;"></i>
+                <p>Error loading items. Please try again.</p>
+                <button class="btn btn-primary js-retry-load">Retry</button>
+            </div>
+        `;
+    }
+}
+
+// Render items to the grid
+function renderItems(items) {
+    const grid = document.getElementById('itemsGrid');
+    if (!grid) return;
+    
+    grid.innerHTML = '';
+    
+    items.forEach(item => {
+        const price = item.daily_rate ? `Ksh ${item.daily_rate}/day` : 'Free';
+        const primaryImage = item.primary_image || '/static/images/placeholder.jpg';
+        const rating = Number(item.item_reviews_avg || 0).toFixed(1);
+        const reviews = Number(item.item_reviews_count || 0);
+        
+        const statusLabel = item.status === 'maintenance'
+            ? 'Under Maintenance'
+            : (item.status === 'borrowed' ? 'Currently Borrowed' : (item.status === 'retired' ? 'Retired' : 'Not Available'));
+
+        const card = document.createElement('div');
+        card.className = 'item-card';
+        card.innerHTML = `
+            <div class="item-image">
+                <img src="${primaryImage}" alt="${escapeHtml(item.name)}">
+                <span class="item-category">${escapeHtml(item.category_name || 'General')}</span>
+                ${item.status !== 'available' ? `<span class="item-unavailable">${statusLabel}</span>` : ''}
+            </div>
+            <div class="item-info">
+                <h3>${escapeHtml(item.name)}</h3>
+                <p class="item-description">${escapeHtml(item.description ? item.description.substring(0, 100) : 'No description available')}...</p>
+                <div class="item-meta">
+                    <span><i class="fas fa-tag"></i> ${price}</span>
+                    <span><i class="fas fa-star"></i> ${rating} (${reviews} review${reviews === 1 ? '' : 's'})</span>
+                </div>
+                <div class="item-actions">
+                    <a href="/items/detail/${item.slug}/" class="btn-view">View Details</a>
+                    ${item.status === 'available' ? 
+                        `<button class="btn btn-primary btn-small js-quick-book" data-item-id="${item.id}" data-item-slug="${item.slug}">Book Now</button>` : 
+                        `<button class="btn btn-outline btn-small" disabled>Unavailable</button>`
+                    }
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+// View item details (shows alert with item info)
+function viewItemDetails(itemId) {
+    // First, fetch the item to get its slug
+    fetch(`/api/items/items/${itemId}/`)
+        .then(response => response.json())
+        .then(item => {
+            // Redirect to the detail page using the slug
+            window.location.href = `/items/detail/${item.slug}/`;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Could not load item details');
+        });
+}
+
+// Quick book function
+function quickBook(itemId, itemSlug) {
+    // Check if user is logged in
+    const isAuthenticated = document.querySelector('.user-dropdown') !== null;
+    
+    if (!isAuthenticated) {
+        alert('Please login to book items.');
+        window.location.href = '/login/';
+        return;
+    }
+    
+    // Redirect to canonical booking page
+    window.location.href = `/items/${itemSlug}/book/`;
+}
+// Helper function to escape HTML
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Helper function to format number with commas
+function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+</script>
+<script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>

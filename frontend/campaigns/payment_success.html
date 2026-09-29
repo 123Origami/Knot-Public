@@ -1,0 +1,18 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Successful - Knot</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+<body>
+    <div class="container" style="max-width: 500px; margin: 50px auto;">
+        <div class="card" style="text-align: center;">
+            <i class="fas fa-check-circle" style="font-size: 64px; color: #68d391;"></i>
+            <h2>Payment Successful!</h2>
+            <p>Thank you for your contribution. Your support helps build a stronger community.</p>
+            <a href="{% url 'goals' %}" class="btn btn-primary">Back to Community Goals</a>
+        </div>
+    </div>
+</body>
+</html>

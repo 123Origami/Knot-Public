@@ -1,0 +1,260 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ campaign.title }} - Knot</title>
+    <script src="{% static 'js/theme-bootstrap.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .campaign-hero {
+            background: linear-gradient(135deg, #ffebf3 0%, #fff5f9 100%);
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+        }
+        .campaign-title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .campaign-meta {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+            color: #718096;
+        }
+        .campaign-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .campaign-image {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+        .campaign-description {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 2rem;
+        }
+        .progress-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 100px;
+        }
+        .progress-bar {
+            height: 12px;
+            background: #e2e8f0;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #5a67d8;
+            border-radius: 6px;
+            width: var(--progress-width, 0%);
+        }
+        .amount-display {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #5a67d8;
+        }
+        .backers-list {
+            margin-top: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .backer-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .backer-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #ffebf3;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        .backer-amount {
+            font-weight: 600;
+            color: #5a67d8;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .status-active {
+            background: rgba(104, 211, 145, 0.2);
+            color: #68d391;
+        }
+        .status-funded {
+            background: rgba(90, 103, 216, 0.2);
+            color: #5a67d8;
+        }
+        .status-expired {
+            background: rgba(252, 129, 129, 0.2);
+            color: #fc8181;
+        }
+        @media (max-width: 768px) {
+            .campaign-title {
+                font-size: 1.8rem;
+            }
+            .campaign-image {
+                height: 250px;
+            }
+            .row-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .row-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="{% if user.is_authenticated %}{% url 'user_dashboard' %}{% else %}{% url 'index' %}{% endif %}" class="logo">
+                <i class="fas fa-link"></i> Knot
+            </a>
+            <ul class="nav-menu">
+                {% if user.is_authenticated %}
+                    <li><a href="{% url 'user_dashboard' %}">Dashboard</a></li>
+                {% else %}
+                    <li><a href="{% url 'index' %}">Home</a></li>
+                {% endif %}
+                <li><a href="{% url 'browse' %}">Browse Items</a></li>
+                <li><a href="{% url 'suggest' %}">Suggest Item</a></li>
+                <li><a href="{% url 'goals' %}" class="active">Community Goals</a></li>
+                <li class="auth-buttons">
+                    {% if user.is_authenticated %}
+                        <div class="user-dropdown">
+                            <span class="user-name">{{ user.username }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                            <div class="dropdown-menu">
+                                <a href="{% url 'user_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                                <a href="{% url 'profile' %}"><i class="fas fa-user"></i> Profile</a>
+                                <div class="dropdown-toggle-row">
+                                    <span><i class="fas fa-moon"></i> Dark Mode</span>
+                                    <label class="switch switch-compact" for="darkModeToggle">
+                                        <input type="checkbox" id="darkModeToggle">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn-login">Login</a>
+                        <a href="{% url 'signup' %}" class="btn-signup">Sign Up</a>
+                    {% endif %}
+                </li>
+            </ul>
+            <button class="hamburger" id="hamburger">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="campaign-hero">
+        <div class="container">
+            <div class="campaign-meta">
+                <div class="campaign-meta-item">
+                    <i class="fas fa-tag"></i>
+                    <span>{{ campaign.category.name|default:"General" }}</span>
+                </div>
+                <div class="campaign-meta-item">
+                    <i class="fas fa-user"></i>
+                    <span>Created by {{ campaign.created_by.username }}</span>
+                </div>
+                <div class="campaign-meta-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>Started {{ campaign.start_date|date:"M d, Y" }}</span>
+                </div>
+            </div>
+            <h1 class="campaign-title">{{ campaign.title }}</h1>
+            <span class="status-badge status-{{ campaign.status }}">
+                {{ campaign.get_status_display }}
+            </span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row-grid">
+            <div>
+                {% if campaign.image %}
+                <img src="{{ campaign.image.url }}" alt="{{ campaign.title }}" class="campaign-image">
+                {% endif %}
+                
+                <h2>About This Campaign</h2>
+                <div class="campaign-description">
+                    {{ campaign.description|linebreaks }}
+                </div>
+            </div>
+
+            <div>
+                <div class="progress-card">
+                    <h3>Funding Progress</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="--progress-width: {{campaign.get_progress_percentage}}%;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span class="amount-display">Ksh {{ campaign.funds_raised|floatformat:0 }}</span>
+                        <span>of Ksh {{ campaign.target_amount|floatformat:0 }}</span>
+                    </div>
+                </div>
+                
+                <div class="progress-card" style="margin-top: 2rem;">
+                    <h3>Recent Backers</h3>
+                    <div id="backersList">
+                        <div style="text-align: center; padding: 1rem;">
+                            <i class="fas fa-spinner fa-spin"></i> Loading...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <a href="{% url 'index' %}" class="logo" style="color: white;">
+                        <i class="fas fa-link"></i> Knot
+                    </a>
+                    <p>Tying Communities Together Through Shared Resources</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <div id="campaign-data" data-campaign-id="{{ campaign.id }}" style="display: none;"></div>
+    <script src="{% static 'js/app.js' %}"></script>
+    <script src="{% static 'js/campaign_detail.js' %}"></script>
+</body>
+</html>

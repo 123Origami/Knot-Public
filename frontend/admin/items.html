@@ -1,0 +1,874 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item Management - Knot Admin</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .item-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        .item-status {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .status-available {
+            background: rgba(220, 180, 190, 0.25); 
+            color: var(--dark-color);
+            border: 1px solid rgba(220, 180, 190, 0.4);
+         }
+        .status-borrowed {
+            background: rgba(246, 173, 85, 0.2);
+            color: var(--warning-color);
+        }
+        .status-maintenance {
+            background: rgba(252, 129, 129, 0.2);
+            color: var(--danger-color);
+        }
+        .status-retired {
+            background: rgba(148, 163, 184, 0.25);
+            color: #475569;
+        }
+        .upload-feedback {
+            margin-top: 0.4rem;
+            font-size: 0.86rem;
+            color: #dc2626;
+        }
+        .field-invalid {
+            border-color: #dc2626 !important;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+            background: #fff7f7;
+        }
+        .suggestion-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 1rem;
+        }
+        .suggestion-modal-content {
+            background: #fff;
+            border-radius: 12px;
+            width: min(680px, 100%);
+            max-height: 90vh;
+            overflow: auto;
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+            padding: 1.25rem;
+        }
+        /* Custom Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.95);
+            }
+            to { 
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        .modal-box {
+            position: relative;
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease-out;
+        }
+        .modal-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        .modal-icon.danger {
+            background: rgba(220, 38, 38, 0.1);
+            color: #dc2626;
+        }
+        .modal-icon.warning {
+            background: rgba(251, 191, 36, 0.1);
+            color: #f59e0b;
+        }
+        .modal-icon.info {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+        }
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #1f2937;
+        }
+        .modal-message {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        .modal-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            font-family: inherit;
+        }
+        .modal-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .modal-input-hint {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-top: -0.75rem;
+            margin-bottom: 1rem;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+        .modal-btn {
+            padding: 0.625rem 1.25rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+        }
+        .modal-btn-cancel {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        .modal-btn-cancel:hover {
+            background: #e5e7eb;
+        }
+        .modal-btn-confirm {
+            background: var(--primary-color);
+            color: white;
+        }
+        .modal-btn-confirm:hover {
+            background: var(--primary-dark);
+        }
+        .modal-btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+        .modal-btn-danger:hover {
+            background: #b91c1c;
+        }
+        /* Targeted fix for the Switch to Member link */
+.admin-user-action-link {
+    color: #000000 !important; /* Pure black */
+    font-weight: 600; /* Making it slightly bolder helps it look "darker" */
+}
+
+.admin-user-action-link i {
+    color: #000000 !important; /* Ensures the icon darkens too */
+}
+
+/* Optional: Add a hover effect so the user knows it's clickable */
+.admin-user-action-link:hover {
+    color: #be185d !important; /* Switches to your primary burgundy on hover */
+}
+    </style>
+</head>
+<body>
+    <!-- Navigation (same as users.html) -->
+    <nav class="navbar admin-navbar">
+        <div class="container nav-container">
+            <a href="{% url 'admin_dashboard' %}" class="logo">
+                <i class="fas fa-link"></i> Knot Admin
+            </a>
+            <ul class="nav-menu">
+                <li><a href="{% url 'admin_dashboard' %}" {% if request.resolver_match.url_name == 'admin_dashboard' %}class="active"{% endif %}><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="{% url 'admin_users' %}" {% if request.resolver_match.url_name == 'admin_users' %}class="active"{% endif %}><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="{% url 'admin_items' %}" {% if request.resolver_match.url_name == 'admin_items' %}class="active"{% endif %}><i class="fas fa-box"></i> Items</a></li>
+                <li><a href="{% url 'admin_suggestions' %}" {% if request.resolver_match.url_name == 'admin_suggestions' %}class="active"{% endif %}><i class="fas fa-lightbulb"></i> Suggestions</a></li>
+                <li><a href="{% url 'admin_bookings' %}" {% if request.resolver_match.url_name == 'admin_bookings' %}class="active"{% endif %}><i class="fas fa-calendar-check"></i> Bookings</a></li>
+                <li><a href="{% url 'admin_request_list' %}" {% if request.resolver_match.url_name == 'admin_request_list' %}class="active"{% endif %}><i class="fas fa-user-shield"></i> Requests</a></li>
+                <li><a href="{% url 'admin_reports' %}" {% if request.resolver_match.url_name == 'admin_reports' %}class="active"{% endif %}><i class="fas fa-chart-bar"></i> Reports</a></li>
+                <li class="auth-buttons">
+                    <div class="admin-user-dropdown">
+                        <button type="button" class="admin-user-toggle admin-user-pill" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-user-shield"></i>
+                            <span>{{ user.username }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="admin-dropdown-menu">
+                            <a href="{% url 'user_dashboard' %}" class="admin-user-action-link">
+                                <i class="fas fa-user"></i>
+                                <span>Switch to Member Panel</span>
+                            </a>
+                            <a href="{% url 'logout' %}" class="admin-user-action-link danger">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                            </a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+            <button class="hamburger" id="hamburger">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1><i class="fas fa-box"></i> Item Management</h1>
+            <p>View and manage all items in the community</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <section class="dashboard">
+        <div class="container">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}" style="margin-bottom: 1rem;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="admin-card" style="margin-bottom: 2rem;">
+                <div class="admin-card-header">
+                    <h3><i class="fas fa-plus-circle"></i> Add New Item</h3>
+                </div>
+                <div class="admin-card-body">
+                    <form id="adminItemCreateForm" method="post" action="{% url 'admin_item_create' %}" enctype="multipart/form-data" style="display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1rem;">
+                        {% csrf_token %}
+                        <div>
+                            <label>Item Name</label>
+                            <input type="text" name="name" class="form-input" required>
+                        </div>
+                        <div>
+                            <label>Category</label>
+                            <select name="category" class="form-select">
+                                <option value="">Select category</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <small style="display:block; margin-top:0.35rem; color:#64748b;">Or add a new category below.</small>
+                        </div>
+                        <div>
+                            <label>New Category (optional)</label>
+                            <input type="text" name="new_category_name" class="form-input" placeholder="e.g. Camping Gear">
+                        </div>
+                        <div>
+                            <label>Steward</label>
+                            <select name="steward" class="form-select">
+                                <option value="">Current admin</option>
+                                {% for steward in stewards %}
+                                <option value="{{ steward.id }}">{{ steward.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label>Location</label>
+                            <input type="text" name="location_details" class="form-input" required>
+                        </div>
+                        <div>
+                            <label>Condition</label>
+                            <select name="condition" class="form-select">
+                                <option value="new">New</option>
+                                <option value="like_new">Like New</option>
+                                <option value="good" selected>Good</option>
+                                <option value="fair">Fair</option>
+                                <option value="poor">Poor</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Status</label>
+                            <select name="status" class="form-select">
+                                <option value="available" selected>Available</option>
+                                <option value="maintenance">Under Maintenance</option>
+                                <option value="retired">Retired</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Daily Rate (Ksh)</label>
+                            <input type="text" name="daily_rate" class="form-input" inputmode="decimal" placeholder="e.g. 150.00" required>
+                        </div>
+                        <div>
+                            <label>Deposit (Ksh)</label>
+                            <input type="text" name="deposit_amount" class="form-input" inputmode="decimal" placeholder="e.g. 500.00" required>
+                        </div>
+                        <div>
+                            <label>Max Borrow Days</label>
+                            <input type="text" name="max_borrow_days" class="form-input" inputmode="numeric" pattern="[0-9]*" value="14" required>
+                        </div>
+                        <div>
+                            <label>Primary Image (optional)</label>
+                            <input type="file" name="primary_image" class="form-input" accept="image/*">
+                        </div>
+                        <div>
+                            <label>Additional Images (optional)</label>
+                            <input type="file" id="createAdditionalImagesInput" name="additional_images" class="form-input" accept="image/jpeg,image/png,image/webp" multiple>
+                            <small style="display:block; margin-top:0.35rem; color:#64748b;">Max 12 images total. JPG, PNG, WEBP only. 5MB each.</small>
+                            <div id="createUploadFeedback" class="upload-feedback"></div>
+                        </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label>Tags (optional)</label>
+                            <input type="text" name="tags" class="form-input" placeholder="e.g. camera, travel, outdoors">
+                        </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label>Description</label>
+                            <textarea name="description" class="form-input" rows="3" required></textarea>
+                        </div>
+                        <div style="grid-column: 1 / -1; display:flex; justify-content:flex-end;">
+                            <button type="submit" class="btn btn-primary">Create Item</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid" style="margin-bottom: 2rem;">
+                <div class="stat-card">
+                    <div class="stat-number">{{ total_items|default:"0" }}</div>
+                    <div class="stat-label">Total Items</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ available_items|default:"0" }}</div>
+                    <div class="stat-label">Available</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ borrowed_items|default:"0" }}</div>
+                    <div class="stat-label">Borrowed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ maintenance_items|default:"0" }}</div>
+                    <div class="stat-label">Maintenance</div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filter-section">
+                <form method="get" action="{% url 'admin_items' %}" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <div style="flex: 2;">
+                        <input type="text" name="q" class="form-input" value="{{ search_query }}" placeholder="Search items by name, description, category, or steward...">
+                    </div>
+                    <div style="flex: 1;">
+                        <select name="category" class="form-select">
+                            <option value="">All Categories</option>
+                            {% for category in categories %}
+                                <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <select name="status" class="form-select">
+                            <option value="" {% if not selected_status %}selected{% endif %}>All Status</option>
+                            <option value="available" {% if selected_status == 'available' %}selected{% endif %}>Available</option>
+                            <option value="borrowed" {% if selected_status == 'borrowed' %}selected{% endif %}>Borrowed</option>
+                            <option value="maintenance" {% if selected_status == 'maintenance' %}selected{% endif %}>Maintenance</option>
+                            <option value="retired" {% if selected_status == 'retired' %}selected{% endif %}>Retired</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-primary">Apply</button>
+                        <a href="{% url 'admin_items' %}" class="btn btn-outline">Reset</a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Items Grid -->
+            <div class="item-grid">
+                {% for item in items %}
+                <div class="item-card">
+                    <div class="item-image">
+                        <img src="{{ item.display_image_url }}" alt="{{ item.name }}">
+                        <span class="item-status status-{{ item.status }}">
+                            {{ item.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="item-info">
+                        <h3>{{ item.name }}</h3>
+                        <p class="item-description">{{ item.description|truncatechars:100 }}</p>
+                        <div class="item-meta">
+                            <span><i class="fas fa-user"></i> {{ item.steward.username }}</span>
+                            <span><i class="fas fa-tag"></i> {{ item.category.name }}</span>
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-top: 1rem;">
+                            <a class="btn btn-small btn-primary" href="{% url 'item-detail' item.slug %}">View</a>
+                            <a class="btn btn-small btn-outline" href="{% url 'admin_item_edit' item.id %}">Edit</a>
+                            {% if item.status == 'maintenance' %}
+                                <form method="post" action="{% url 'admin_item_update_status' item.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="status" value="available">
+                                    <button type="submit" class="btn btn-small btn-success">Mark Fixed</button>
+                                </form>
+                            {% else %}
+                                <form method="post" action="{% url 'admin_item_update_status' item.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="status" value="maintenance">
+                                    <button type="submit" class="btn btn-small" style="background: var(--warning-color);">Maintenance</button>
+                                </form>
+                            {% endif %}
+                            {% if item.status != 'retired' %}
+                            <form method="post" action="{% url 'admin_item_update_status' item.id %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="retired">
+                                <button type="submit" class="btn btn-small btn-outline">Retire</button>
+                            </form>
+                            {% endif %}
+                            <form method="post" action="{% url 'admin_item_delete' item.id %}" style="display: inline;" id="deleteForm{{ item.id }}">
+                                {% csrf_token %}
+                                <button type="button" class="btn btn-small btn-danger deleteItemBtn" data-item-name="{{ item.name }}" data-form-id="deleteForm{{ item.id }}">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                    <i class="fas fa-box" style="font-size: 3rem; color: var(--gray-color); margin-bottom: 1rem;"></i>
+                    <h3>No Items Found</h3>
+                    <p style="color: var(--gray-color);">There are no items in the system yet.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <div id="suggestionDetailModal" class="suggestion-modal" role="dialog" aria-modal="true" aria-labelledby="suggestionDetailTitle" style="display: none;">
+    </div>
+
+    <div id="editSuggestionModal" class="suggestion-modal" role="dialog" aria-modal="true" aria-labelledby="editSuggestionTitle" style="display: none;">
+    </div>
+
+    <!-- Footer (same as users.html) -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <a href="{% url 'admin_dashboard' %}" class="logo" style="color: white;">
+                        <i class="fas fa-link"></i> Knot
+                    </a>
+                    <p>Admin Portal - Community Management</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Knot. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="{% static 'js/admin.js' %}"></script>
+    <script>
+        (function () {
+            const form = document.getElementById('adminItemCreateForm');
+            const primaryImageInput = form ? form.querySelector('input[name="primary_image"]') : null;
+            const additionalImagesInput = document.getElementById('createAdditionalImagesInput');
+            const categorySelectInput = form ? form.querySelector('select[name="category"]') : null;
+            const newCategoryInput = form ? form.querySelector('input[name="new_category_name"]') : null;
+            const feedback = document.getElementById('createUploadFeedback');
+            const maxFileBytes = 5 * 1024 * 1024;
+            const maxImages = 12;
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+            if (!form) {
+                return;
+            }
+
+            const detailModal = document.getElementById('suggestionDetailModal');
+            const closeDetailModalBtn = document.getElementById('closeSuggestionModal');
+
+            function openDetailModal(button) {
+                document.getElementById('detailName').textContent = button.getAttribute('data-suggestion-name') || '-';
+                document.getElementById('detailDescription').textContent = button.getAttribute('data-suggestion-description') || '-';
+                document.getElementById('detailSuggestedBy').textContent = button.getAttribute('data-suggestion-user') || '-';
+                document.getElementById('detailCategory').textContent = button.getAttribute('data-suggestion-category') || '-';
+                document.getElementById('detailCost').textContent = button.getAttribute('data-suggestion-cost') || '-';
+                document.getElementById('detailVotes').textContent = button.getAttribute('data-suggestion-votes') || '0';
+                document.getElementById('detailStatus').textContent = button.getAttribute('data-suggestion-status') || '-';
+                detailModal.style.display = 'flex';
+            }
+
+            if (closeDetailModalBtn) {
+                closeDetailModalBtn.addEventListener('click', function () {
+                    detailModal.style.display = 'none';
+                });
+            }
+
+            if (detailModal) {
+                detailModal.addEventListener('click', function (event) {
+                    if (event.target === detailModal) {
+                        detailModal.style.display = 'none';
+                    }
+                });
+            }
+
+            document.querySelectorAll('.js-view-suggestion').forEach((button) => {
+                button.addEventListener('click', function () {
+                    openDetailModal(button);
+                });
+            });
+
+            function setFeedback(message) {
+                if (feedback) {
+                    feedback.textContent = message || '';
+                }
+            }
+
+            function clearFieldInvalidState() {
+                form.querySelectorAll('.field-invalid').forEach((field) => {
+                    field.classList.remove('field-invalid');
+                });
+            }
+
+            function markFieldInvalid(field, message) {
+                if (!field) {
+                    setFeedback(message || 'Please correct the highlighted fields.');
+                    return false;
+                }
+
+                field.classList.add('field-invalid');
+                setFeedback(message || 'Please correct the highlighted fields.');
+                field.focus();
+                return false;
+            }
+
+            function validateImages() {
+                const primary = primaryImageInput && primaryImageInput.files ? Array.from(primaryImageInput.files) : [];
+                const additional = additionalImagesInput && additionalImagesInput.files ? Array.from(additionalImagesInput.files) : [];
+                const all = primary.concat(additional);
+
+                if (all.length > maxImages) {
+                    setFeedback(`You can upload up to ${maxImages} images total.`);
+                    return false;
+                }
+
+                for (const file of all) {
+                    if (!allowedTypes.includes(file.type)) {
+                        setFeedback(`Unsupported file type: ${file.name}. Use JPG, PNG, or WEBP.`);
+                        return false;
+                    }
+                    if (file.size > maxFileBytes) {
+                        setFeedback(`${file.name} is too large. Max size is 5MB.`);
+                        return false;
+                    }
+                }
+
+                setFeedback('');
+                return true;
+            }
+
+            function validateRequiredFields() {
+                clearFieldInvalidState();
+
+                const requiredTextFields = [
+                    form.querySelector('input[name="name"]'),
+                    form.querySelector('input[name="location_details"]'),
+                    form.querySelector('textarea[name="description"]'),
+                    form.querySelector('input[name="daily_rate"]'),
+                    form.querySelector('input[name="deposit_amount"]'),
+                    form.querySelector('input[name="max_borrow_days"]'),
+                ].filter(Boolean);
+
+                for (const field of requiredTextFields) {
+                    field.value = (field.value || '').trim();
+                    if (!field.value) {
+                        const label = (field.closest('div') || form).querySelector('label');
+                        const fieldName = label ? label.textContent.trim() : 'This field';
+                        return markFieldInvalid(field, `${fieldName} is required.`);
+                    }
+                }
+
+                const existingCategoryValue = categorySelectInput ? (categorySelectInput.value || '').trim() : '';
+                const newCategoryValue = newCategoryInput ? (newCategoryInput.value || '').trim() : '';
+                const dailyRateField = form.querySelector('input[name="daily_rate"]');
+                const depositField = form.querySelector('input[name="deposit_amount"]');
+                const maxBorrowDaysField = form.querySelector('input[name="max_borrow_days"]');
+
+                const decimalPattern = /^\d+(\.\d+)?$/;
+                const integerPattern = /^\d+$/;
+
+                if (dailyRateField && !decimalPattern.test((dailyRateField.value || '').trim())) {
+                    return markFieldInvalid(dailyRateField, 'Daily Rate must be a numeric value.');
+                }
+
+                if (dailyRateField && parseFloat(dailyRateField.value) <= 0) {
+                    return markFieldInvalid(dailyRateField, 'Daily Rate must be greater than 0.');
+                }
+
+                if (depositField && !decimalPattern.test((depositField.value || '').trim())) {
+                    return markFieldInvalid(depositField, 'Deposit must be a numeric value.');
+                }
+
+                if (depositField && parseFloat(depositField.value) <= 0) {
+                    return markFieldInvalid(depositField, 'Deposit must be greater than 0.');
+                }
+
+                if (maxBorrowDaysField && !integerPattern.test((maxBorrowDaysField.value || '').trim())) {
+                    return markFieldInvalid(maxBorrowDaysField, 'Max Borrow Days must be a whole number.');
+                }
+
+                if (maxBorrowDaysField && parseInt(maxBorrowDaysField.value, 10) < 1) {
+                    return markFieldInvalid(maxBorrowDaysField, 'Max Borrow Days must be at least 1.');
+                }
+
+                if (newCategoryInput) {
+                    newCategoryInput.value = newCategoryValue;
+                }
+
+                if (existingCategoryValue && newCategoryValue) {
+                    if (categorySelectInput) {
+                        categorySelectInput.classList.add('field-invalid');
+                    }
+                    return markFieldInvalid(newCategoryInput, 'Choose an existing category or enter a new category, not both.');
+                }
+
+                if (!existingCategoryValue && !newCategoryValue) {
+                    if (newCategoryInput) {
+                        newCategoryInput.classList.add('field-invalid');
+                    }
+                    return markFieldInvalid(categorySelectInput, 'Select an existing category or enter a new category.');
+                }
+
+                setFeedback('');
+                return true;
+            }
+
+            if (primaryImageInput) {
+                primaryImageInput.addEventListener('change', validateImages);
+            }
+            if (additionalImagesInput) {
+                additionalImagesInput.addEventListener('change', validateImages);
+            }
+
+            form.querySelectorAll('input, select, textarea').forEach((field) => {
+                field.addEventListener('input', function () {
+                    if ((field.value || '').trim()) {
+                        field.classList.remove('field-invalid');
+                    }
+                    if (feedback && feedback.textContent) {
+                        const anyInvalid = form.querySelector('.field-invalid');
+                        if (!anyInvalid) {
+                            setFeedback('');
+                        }
+                    }
+                });
+
+                field.addEventListener('change', function () {
+                    if ((field.value || '').trim()) {
+                        field.classList.remove('field-invalid');
+                    }
+                    if (feedback && feedback.textContent) {
+                        const anyInvalid = form.querySelector('.field-invalid');
+                        if (!anyInvalid) {
+                            setFeedback('');
+                        }
+                    }
+                });
+            });
+
+            if (categorySelectInput && newCategoryInput) {
+                categorySelectInput.addEventListener('change', function () {
+                    if ((categorySelectInput.value || '').trim()) {
+                        newCategoryInput.value = '';
+                    }
+                });
+
+                newCategoryInput.addEventListener('input', function () {
+                    if ((newCategoryInput.value || '').trim()) {
+                        categorySelectInput.value = '';
+                    }
+                });
+            }
+
+            form.addEventListener('submit', function (event) {
+                if (!validateRequiredFields() || !validateImages()) {
+                    event.preventDefault();
+                }
+            });
+        })();
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) {
+                return parts.pop().split(';').shift();
+            }
+            return '';
+        }
+
+        // Handle delete item buttons
+        document.querySelectorAll('.deleteItemBtn').forEach((button) => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const itemName = button.getAttribute('data-item-name');
+                const formId = button.getAttribute('data-form-id');
+                showConfirmModal(
+                    'Delete Item',
+                    `Delete "${itemName}"? This action cannot be undone.`,
+                    () => {
+                        document.getElementById(formId).submit();
+                    }
+                );
+            });
+        });
+
+        // Modal Functions
+        function showConfirmModal(title, message, onConfirm, isDangerous = true) {
+            const modal = document.getElementById('confirmModal');
+            const modalOverlay = document.getElementById('modalOverlay');
+            const modalTitle = modal.querySelector('.modal-title');
+            const modalMessage = modal.querySelector('.modal-message');
+            const modalIcon = modal.querySelector('.modal-icon');
+            const confirmBtn = modal.querySelector('.modal-btn:not(.modal-btn-cancel)');
+            const cancelBtn = modal.querySelector('.modal-btn-cancel');
+
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            
+            modalIcon.className = 'modal-icon';
+            if (isDangerous) {
+                modalIcon.classList.add('danger');
+                modalIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                confirmBtn.className = 'modal-btn modal-btn-danger';
+                confirmBtn.textContent = 'Delete';
+            } else {
+                modalIcon.classList.add('info');
+                modalIcon.innerHTML = '<i class="fas fa-info-circle"></i>';
+                confirmBtn.className = 'modal-btn modal-btn-confirm';
+                confirmBtn.textContent = 'Confirm';
+            }
+
+            const closeModal = () => {
+                modalOverlay.classList.remove('active');
+            };
+
+            confirmBtn.onclick = () => {
+                closeModal();
+                onConfirm();
+            };
+            cancelBtn.onclick = closeModal;
+            modalOverlay.onclick = (e) => {
+                if (e.target === modalOverlay) closeModal();
+            };
+
+            modalOverlay.classList.add('active');
+        }
+
+        function showPromptModal(title, message, inputPlaceholder, onSubmit, inputType = 'text', hint = '') {
+            const modal = document.getElementById('promptModal');
+            const modalOverlay = document.getElementById('modalOverlay');
+            const modalTitle = modal.querySelector('.modal-title');
+            const modalMessage = modal.querySelector('.modal-message');
+            const modalInput = modal.querySelector('.modal-input');
+            const modalHint = modal.querySelector('.modal-input-hint');
+            const submitBtn = modal.querySelector('.modal-btn-confirm');
+            const cancelBtn = modal.querySelector('.modal-btn-cancel');
+
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modalInput.placeholder = inputPlaceholder;
+            modalInput.type = inputType;
+            modalInput.value = '';
+            modalHint.textContent = hint;
+
+            const closeModal = () => {
+                modalOverlay.classList.remove('active');
+            };
+
+            submitBtn.onclick = () => {
+                const value = modalInput.value.trim();
+                if (!value) {
+                    modalInput.focus();
+                    return;
+                }
+                closeModal();
+                onSubmit(value);
+            };
+            cancelBtn.onclick = closeModal;
+            modalOverlay.onclick = (e) => {
+                if (e.target === modalOverlay) closeModal();
+            };
+
+            // Allow Enter key to submit
+            modalInput.onkeypress = (e) => {
+                if (e.key === 'Enter') {
+                    submitBtn.click();
+                }
+            };
+
+            modalOverlay.classList.add('active');
+            setTimeout(() => modalInput.focus(), 100);
+        }
+    </script>
+
+    <!-- Modal Overlays -->
+    <div id="modalOverlay" class="modal-overlay">
+        <!-- Confirm Modal -->
+        <div id="confirmModal" class="modal-box">
+            <div class="modal-icon danger"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 class="modal-title">Confirm Action</h3>
+            <p class="modal-message">Are you sure?</p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel">Cancel</button>
+                <button class="modal-btn modal-btn-danger">Delete</button>
+            </div>
+        </div>
+
+        <!-- Prompt Modal -->
+        <div id="promptModal" class="modal-box" style="display: none;">
+            <div class="modal-icon info"><i class="fas fa-keyboard"></i></div>
+            <h3 class="modal-title">Enter Information</h3>
+            <p class="modal-message">Please enter the required information:</p>
+            <input type="text" class="modal-input" placeholder="Enter value here">
+            <div class="modal-input-hint"></div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel">Cancel</button>
+                <button class="modal-btn modal-btn-confirm">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/admin-dropdown.js' %}"></script>
+</body>
+</html>
+
+

@@ -1,0 +1,1199 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suggestion Management - Knot</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .suggestion-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 1rem;
+        }
+        .suggestion-modal-content {
+            background: #fff;
+            border-radius: 12px;
+            width: min(680px, 100%);
+            max-height: 90vh;
+            overflow: auto;
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+            padding: 1.25rem;
+        }
+        .suggestion-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+            margin: 1rem 0;
+        }
+        .suggestion-meta-card {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 0.75rem;
+        }
+        /* Custom Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.95);
+            }
+            to { 
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        .modal-box {
+            position: relative;
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease-out;
+        }
+        .modal-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        .modal-icon.danger {
+            background: rgba(220, 38, 38, 0.1);
+            color: #dc2626;
+        }
+        .modal-icon.warning {
+            background: rgba(251, 191, 36, 0.1);
+            color: #f59e0b;
+        }
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #1f2937;
+        }
+        .modal-message {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+        .modal-btn {
+            padding: 0.625rem 1.25rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+        }
+        .modal-btn-cancel {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        .modal-btn-cancel:hover {
+            background: #e5e7eb;
+        }
+        .modal-btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+        .modal-btn-danger:hover {
+            background: #b91c1c;
+        }
+        .modal-btn-confirm {
+            background: var(--primary-color);
+            color: white;
+        }
+        .modal-btn-confirm:hover {
+            background: var(--primary-dark);
+        }
+        .funding-progress {
+            min-width: 180px;
+        }
+        .funding-progress-track {
+            width: 100%;
+            height: 8px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            overflow: hidden;
+            margin: 0.35rem 0;
+        }
+        .funding-progress-fill {
+            height: 100%;
+            background: #ef4444;
+            width: 0;
+            max-width: 100%;
+        }
+        .funding-progress-fill.progress-mid {
+            background: #f59e0b;
+        }
+        .funding-progress-fill.progress-high {
+            background: #22c55e;
+        }
+        .funding-progress-meta {
+            font-size: 0.82rem;
+            color: #64748b;
+            display: flex;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+        /* Improved Suggestions Table Styling */
+        .booking-table {
+            font-size: 0.95rem;
+        }
+        .booking-table thead {
+            background: #f8fafc;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .booking-table th {
+            padding: 0.9rem;
+            font-weight: 600;
+            text-align: left;
+            color: #334155;
+        }
+        .booking-table tbody tr {
+            border-bottom: 1px solid #e2e8f0;
+            transition: background-color 0.15s ease;
+        }
+        .booking-table tbody tr:hover {
+            background-color: #f8fafc;
+        }
+        .booking-table td {
+            padding: 0.75rem 0.9rem;
+            vertical-align: middle;
+        }
+        /* Compact action buttons */
+        .table-action-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .btn-compact {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        /* Status badges styling */
+        .status-badge {
+            display: inline-block;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .status-approved {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .status-rejected {
+            background: #fee2e2;
+            color: #7f1d1d;
+        }
+        .status-campaign_created {
+            background: #dbeafe;
+            color: #0c2340;
+        }
+        /* Funding progress - more compact */
+        .funding-progress {
+            min-width: 160px;
+        }
+        .funding-progress-track {
+            height: 6px;
+            margin: 0.3rem 0;
+        }
+        /* Card layout improvements */
+        .admin-card {
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .admin-card-header {
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1.2rem;
+        }
+        .admin-card-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: #1e293b;
+        }
+        .admin-card-body {
+            padding: 0;
+        }
+        /* Targeted fix for the Switch to Member link */
+.admin-user-action-link {
+    color: #000000 !important; /* Pure black */
+    font-weight: 600; /* Making it slightly bolder helps it look "darker" */
+}
+
+.admin-user-action-link i {
+    color: #000000 !important; /* Ensures the icon darkens too */
+}
+
+/* Optional: Add a hover effect so the user knows it's clickable */
+.admin-user-action-link:hover {
+    color: #be185d !important; /* Switches to your primary burgundy on hover */
+}
+    </style>
+</head>
+<body>
+    <nav class="navbar admin-navbar">
+        <div class="container nav-container">
+            <a href="{% url 'admin_dashboard' %}" class="logo">
+                <i class="fas fa-link"></i> Knot
+            </a>
+            <ul class="nav-menu">
+                <li><a href="{% url 'admin_dashboard' %}" {% if request.resolver_match.url_name == 'admin_dashboard' %}class="active"{% endif %}><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="{% url 'admin_users' %}" {% if request.resolver_match.url_name == 'admin_users' %}class="active"{% endif %}><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="{% url 'admin_items' %}" {% if request.resolver_match.url_name == 'admin_items' %}class="active"{% endif %}><i class="fas fa-box"></i> Items</a></li>
+                <li><a href="{% url 'admin_suggestions' %}" {% if request.resolver_match.url_name == 'admin_suggestions' %}class="active"{% endif %}><i class="fas fa-lightbulb"></i> Suggestions</a></li>
+                <li><a href="{% url 'admin_bookings' %}" {% if request.resolver_match.url_name == 'admin_bookings' %}class="active"{% endif %}><i class="fas fa-calendar-check"></i> Bookings</a></li>
+                <li><a href="{% url 'admin_request_list' %}" {% if request.resolver_match.url_name == 'admin_request_list' %}class="active"{% endif %}><i class="fas fa-user-shield"></i> Requests</a></li>
+                <li><a href="{% url 'admin_reports' %}" {% if request.resolver_match.url_name == 'admin_reports' %}class="active"{% endif %}><i class="fas fa-chart-bar"></i> Reports</a></li>
+                <li class="auth-buttons">
+                    <div class="admin-user-dropdown">
+                        <button type="button" class="admin-user-toggle admin-user-pill" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-user-shield"></i>
+                            <span>{{ user.username }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="admin-dropdown-menu">
+                            <a href="{% url 'user_dashboard' %}" class="admin-user-action-link">
+                                <i class="fas fa-user"></i>
+                                <span>Switch to Member Panel</span>
+                            </a>
+                            <a href="{% url 'logout' %}" class="admin-user-action-link danger">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                            </a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+            <button class="hamburger" id="hamburger">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="page-header">
+        <div class="container">
+            <h1><i class="fas fa-lightbulb"></i> Suggestion Management</h1>
+            <p>Review community suggestions and moderate approvals quickly</p>
+        </div>
+    </div>
+
+    <section class="dashboard">
+        <div class="container">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}" style="margin-bottom: 1rem;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="stats-grid" style="margin-bottom: 2rem;">
+                <div class="stat-card">
+                    <div class="stat-number">{{ total_suggestions|default:"0" }}</div>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ pending_suggestions|default:"0" }}</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ approved_suggestions|add:campaign_suggestions }}</div>
+                    <div class="stat-label">Campaign Created</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ rejected_suggestions|default:"0" }}</div>
+                    <div class="stat-label">Rejected</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ pending_pullouts|default:"0" }}</div>
+                    <div class="stat-label">Pending Pullouts</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ completed_pullouts|default:"0" }}</div>
+                    <div class="stat-label">Pullouts Completed</div>
+                </div>
+            </div>
+
+            <div class="filter-section" style="margin-bottom: 1.5rem;">
+                <form id="suggestionFilterForm" method="get" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+                    <div style="flex: 2; min-width: 230px;">
+                        <label for="searchInput" style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 0.5rem; color: #64748b;">Search</label>
+                        <input
+                            id="searchInput"
+                            type="text"
+                            class="form-input"
+                            name="q"
+                            placeholder="Search by name, description, or user"
+                            value="{{ search_query }}"
+                        >
+                    </div>
+                    <div style="flex: 1; min-width: 190px;">
+                        <label for="statusSelect" style="display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 0.5rem; color: #64748b;">Status</label>
+                        <select id="statusSelect" class="form-select" name="status">
+                            <option value="">All Statuses</option>
+                            <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="campaign_created" {% if selected_status == 'campaign_created' %}selected{% endif %}>Campaign Created</option>
+                            <option value="rejected" {% if selected_status == 'rejected' %}selected{% endif %}>Rejected</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button class="btn btn-primary" type="submit" id="applyFiltersBtn">
+                            <i class="fas fa-filter"></i> Apply Filters
+                        </button>
+                        <a class="btn btn-outline" href="{% url 'admin_suggestions' %}" title="Clear all filters">
+                            <i class="fas fa-redo"></i> Reset
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h3><i class="fas fa-list"></i> Suggestions</h3>
+                </div>
+                <div class="admin-card-body" style="overflow-x: auto;">
+                    <table class="booking-table">
+                        <thead>
+                            <tr>
+                                <th>Suggestion</th>
+                                <th>By</th>
+                                <th>Category</th>
+                                <th>Cost</th>
+                                <th>Votes</th>
+                                <th>Status</th>
+                                <th>Funding Progress</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for suggestion in suggestions %}
+                            <tr>
+                                <td>
+                                    <strong>{{ suggestion.name }}</strong><br>
+                                    <small>{{ suggestion.description|truncatechars:120 }}</small>
+                                </td>
+                                <td>{{ suggestion.suggested_by.username }}</td>
+                                <td>{{ suggestion.category.name|default:"General" }}</td>
+                                <td>Ksh {{ suggestion.estimated_cost }}</td>
+                                <td>{{ suggestion.votes }}</td>
+                                <td><span class="status-badge status-{{ suggestion.status }}">{{ suggestion.get_status_display }}</span></td>
+                                <td>
+                                    {% if suggestion.goal_campaign and suggestion.goal_campaign.target_amount %}
+                                    {% widthratio suggestion.goal_campaign.funds_raised suggestion.goal_campaign.target_amount 100 as suggestion_progress %}
+                                    <div class="funding-progress">
+                                        <div class="funding-progress-track">
+                                            <div class="funding-progress-fill" data-progress="{{ suggestion_progress }}"></div>
+                                        </div>
+                                        <div class="funding-progress-meta">
+                                            <span>{{ suggestion_progress }}%</span>
+                                            <span>Ksh {{ suggestion.goal_campaign.funds_raised|floatformat:0 }} / {{ suggestion.goal_campaign.target_amount|floatformat:0 }}</span>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <small style="color: var(--gray-color);">No goal published yet</small>
+                                    {% endif %}
+                                </td>
+                                <td style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                                    <button
+                                        type="button"
+                                        class="btn btn-small btn-outline btn-compact js-view-suggestion"
+                                        data-suggestion-name="{{ suggestion.name|escapejs }}"
+                                        data-suggestion-description="{{ suggestion.description|escapejs }}"
+                                        data-suggestion-user="{{ suggestion.suggested_by.username|escapejs }}"
+                                        data-suggestion-category="{{ suggestion.category.name|default:'General'|escapejs }}"
+                                        data-suggestion-cost="{{ suggestion.estimated_cost }}"
+                                        data-suggestion-votes="{{ suggestion.votes }}"
+                                        data-suggestion-status="{{ suggestion.get_status_display|escapejs }}"
+                                        data-suggestion-created="{{ suggestion.created_at|date:'M d, Y H:i'|escapejs }}"
+                                    >
+                                        <i class="fas fa-eye"></i> View
+                                    </button>
+                                    {% if suggestion.status != 'campaign_created' and suggestion.status != 'approved' and suggestion.status != 'rejected' %}
+                                    <button
+                                        type="button"
+                                        class="btn btn-small btn-success btn-compact js-approve-suggestion"
+                                        data-suggestion-id="{{ suggestion.id }}"
+                                        data-suggestion-name="{{ suggestion.name|escapejs }}"
+                                        data-suggestion-description="{{ suggestion.description|escapejs }}"
+                                        data-suggestion-category-id="{{ suggestion.category.id|default:'' }}"
+                                        data-suggestion-cost="{{ suggestion.estimated_cost }}"
+                                        data-suggestion-image-url="{% if suggestion.image %}{{ suggestion.image.url }}{% endif %}"
+                                        data-campaign-image-url="{% if suggestion.goal_campaign and suggestion.goal_campaign.image %}{{ suggestion.goal_campaign.image.url }}{% endif %}"
+                                    >
+                                        <i class="fas fa-rocket"></i> Publish
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="btn btn-small btn-warning btn-compact js-reject-suggestion"
+                                        data-suggestion-id="{{ suggestion.id }}"
+                                        data-suggestion-name="{{ suggestion.name }}"
+                                    >
+                                        <i class="fas fa-times"></i> Reject
+                                    </button>
+                                    {% elif suggestion.status == 'campaign_created' %}
+                                    <button
+                                        type="button"
+                                        class="btn btn-small btn-primary btn-compact js-edit-campaign"
+                                        data-suggestion-id="{{ suggestion.id }}"
+                                        data-suggestion-name="{{ suggestion.name|escapejs }}"
+                                        data-suggestion-description="{{ suggestion.description|escapejs }}"
+                                        data-suggestion-category-id="{{ suggestion.category.id|default:'' }}"
+                                        data-suggestion-cost="{{ suggestion.estimated_cost }}"
+                                        data-suggestion-image-url="{% if suggestion.image %}{{ suggestion.image.url }}{% endif %}"
+                                        data-campaign-image-url="{% if suggestion.goal_campaign and suggestion.goal_campaign.image %}{{ suggestion.goal_campaign.image.url }}{% endif %}"
+                                        data-edit-mode="edit"
+                                    >
+                                        <i class="fas fa-pen"></i> Edit Goal
+                                    </button>
+                                    {% endif %}
+                                    <button
+                                        type="button"
+                                        class="btn btn-small btn-danger btn-compact js-delete-suggestion"
+                                        data-suggestion-id="{{ suggestion.id }}"
+                                        data-suggestion-name="{{ suggestion.name }}"
+                                    >
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" style="text-align: center;">No suggestions matched your filters.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="admin-card" style="margin-top: 1.5rem;">
+                <div class="admin-card-header">
+                    <h3><i class="fas fa-money-check-alt"></i> Funded Goals Pullout Tracker</h3>
+                </div>
+                <div class="admin-card-body" style="overflow-x: auto;">
+                    <table class="booking-table">
+                        <thead>
+                            <tr>
+                                <th>Goal</th>
+                                <th>Raised</th>
+                                <th>Target</th>
+                                <th>Progress</th>
+                                <th>Status</th>
+                                <th>Pullout</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for campaign in funded_goal_campaigns %}
+                            <tr>
+                                <td>
+                                    <strong>{{ campaign.title }}</strong><br>
+                                    <small>Suggestion: {{ campaign.suggested_item.name|default:"N/A" }}</small>
+                                </td>
+                                <td>Ksh {{ campaign.funds_raised }}</td>
+                                <td>Ksh {{ campaign.target_amount }}</td>
+                                <td>
+                                    {% if campaign.target_amount %}
+                                    {% widthratio campaign.funds_raised campaign.target_amount 100 as campaign_progress %}
+                                    <div class="funding-progress">
+                                        <div class="funding-progress-track">
+                                            <div class="funding-progress-fill" data-progress="{{ campaign_progress }}"></div>
+                                        </div>
+                                        <div class="funding-progress-meta">
+                                            <span>{{ campaign_progress }}%</span>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <small style="color: var(--gray-color);">No target</small>
+                                    {% endif %}
+                                </td>
+                                <td><span class="status-badge status-{{ campaign.status }}">{{ campaign.get_status_display }}</span></td>
+                                <td>
+                                    {% if campaign.funds_pulled_out %}
+                                        <span class="status-badge status-approved">Completed</span><br>
+                                        <small>{{ campaign.pulled_out_at|date:"M j, Y H:i" }} by {{ campaign.pulled_out_by.username|default:"Admin" }}</small>
+                                    {% else %}
+                                        <span class="status-badge status-pending">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if campaign.acquired_item %}
+                                    <a class="btn btn-small btn-outline btn-compact" href="{% url 'item-detail' campaign.acquired_item.slug %}"><i class="fas fa-link"></i> View Item</a>
+                                    <button
+                                        type="button"
+                                        class="btn btn-small btn-danger btn-compact js-delete-item"
+                                        data-item-id="{{ campaign.acquired_item.id }}"
+                                        data-item-name="{{ campaign.acquired_item.name|escapejs }}"
+                                    >
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% else %}
+                                    <button
+                                        type="button"
+                                        class="btn btn-small btn-primary btn-compact js-open-create-item-modal"
+                                        data-campaign-id="{{ campaign.id }}"
+                                        data-campaign-title="{{ campaign.title|escapejs }}"
+                                        data-default-category-id="{% if campaign.category_id %}{{ campaign.category_id }}{% elif campaign.suggested_item.category_id %}{{ campaign.suggested_item.category_id }}{% endif %}"
+                                        data-default-location="{% if campaign.host_organization and campaign.host_organization.address %}{{ campaign.host_organization.address|escapejs }}{% else %}Community Hub{% endif %}"
+                                    >
+                                        <i class="fas fa-plus"></i> Add as Item
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" style="text-align: center;">No funded goals to track yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="suggestionDetailModal" class="suggestion-modal" role="dialog" aria-modal="true" aria-labelledby="suggestionDetailTitle">
+        <div class="suggestion-modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem; margin-bottom: 0.75rem;">
+                <h3 id="suggestionDetailTitle" style="margin:0;">Suggestion Details</h3>
+                <button type="button" class="btn btn-outline btn-small" id="closeSuggestionModal">Close</button>
+            </div>
+            <div class="suggestion-meta-grid">
+                <div class="suggestion-meta-card"><strong>Suggested By:</strong> <span id="detailSuggestedBy">-</span></div>
+                <div class="suggestion-meta-card"><strong>Category:</strong> <span id="detailCategory">-</span></div>
+                <div class="suggestion-meta-card"><strong>Estimated Cost:</strong> Ksh <span id="detailCost">-</span></div>
+                <div class="suggestion-meta-card"><strong>Votes:</strong> <span id="detailVotes">-</span></div>
+                <div class="suggestion-meta-card"><strong>Status:</strong> <span id="detailStatus">-</span></div>
+                <div class="suggestion-meta-card"><strong>Created:</strong> <span id="detailCreated">-</span></div>
+            </div>
+            <div style="margin-top: 0.5rem;">
+                <h4 style="margin: 0 0 0.4rem 0;">Item Name</h4>
+                <p id="detailName" style="margin:0 0 0.9rem 0;"></p>
+                <h4 style="margin: 0 0 0.4rem 0;">Full Description</h4>
+                <p id="detailDescription" style="white-space: pre-wrap; margin:0;"></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="editSuggestionModal" class="suggestion-modal" role="dialog" aria-modal="true" aria-labelledby="editSuggestionTitle">
+        <div class="suggestion-modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem; margin-bottom: 0.75rem;">
+                <h3 id="editSuggestionTitle" style="margin:0;">Edit Goal Before Publishing</h3>
+                <button type="button" class="btn btn-outline btn-small" id="closeEditSuggestionModal">Close</button>
+            </div>
+            <form id="editSuggestionForm">
+                <input type="hidden" id="editSuggestionId">
+                <input type="hidden" id="editSuggestionMode" value="publish">
+                <div class="suggestion-meta-grid">
+                    <div class="suggestion-meta-card">
+                        <label for="editSuggestionName"><strong>Goal Title</strong></label>
+                        <input id="editSuggestionName" class="form-input" type="text" required>
+                    </div>
+                    <div class="suggestion-meta-card">
+                        <label for="editSuggestionCategory"><strong>Category</strong></label>
+                        <select id="editSuggestionCategory" class="form-select">
+                            <option value="">Keep current category</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="suggestion-meta-card">
+                        <label for="editSuggestionNewCategory"><strong>Or Add New Category</strong></label>
+                        <input id="editSuggestionNewCategory" class="form-input" type="text" placeholder="e.g. Media Lab">
+                    </div>
+                    <div class="suggestion-meta-card">
+                        <label for="editSuggestionCost"><strong>Estimated Cost</strong></label>
+                        <input id="editSuggestionCost" class="form-input" type="number" min="0" step="0.01" required>
+                    </div>
+                    <div class="suggestion-meta-card">
+                        <label for="editSuggestionTarget"><strong>Target Amount</strong></label>
+                        <input id="editSuggestionTarget" class="form-input" type="number" min="1" step="0.01" placeholder="Defaults to estimated cost">
+                    </div>
+                </div>
+                <div style="margin-top: 0.5rem;">
+                    <label for="editSuggestionDescription"><strong>Goal Description</strong></label>
+                    <textarea id="editSuggestionDescription" class="form-textarea" rows="6" required style="width: 100%;"></textarea>
+                </div>
+                <div style="margin-top: 0.75rem;">
+                    <label for="editSuggestionImage"><strong>Goal Photo</strong></label>
+                    <input id="editSuggestionImage" class="form-input" type="file" accept="image/*">
+                    <div id="editSuggestionImagePreviewWrap" style="margin-top: 0.5rem; display: none;">
+                        <small style="display: block; color: var(--gray-color); margin-bottom: 0.35rem;">Current photo preview</small>
+                        <img id="editSuggestionImagePreview" src="" alt="Goal photo preview" style="max-width: 100%; max-height: 180px; border-radius: 8px; border: 1px solid var(--light-gray);">
+                    </div>
+                </div>
+                <div class="modal-buttons" style="margin-top: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-outline btn-small" id="cancelEditSuggestion">Cancel</button>
+                    <button type="submit" class="btn btn-success btn-small" id="editSuggestionSubmitBtn">Publish Goal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="createItemFromGoalModal" class="suggestion-modal" role="dialog" aria-modal="true" aria-labelledby="createItemFromGoalTitle">
+        <div class="suggestion-modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem; margin-bottom: 0.75rem;">
+                <h3 id="createItemFromGoalTitle" style="margin:0;">Add Goal As Item</h3>
+                <button type="button" class="btn btn-outline btn-small" id="closeCreateItemFromGoalModal">Close</button>
+            </div>
+            <p id="createItemFromGoalHint" style="margin: 0 0 1rem 0; color: var(--gray-color);"></p>
+            <form id="createItemFromGoalForm" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create_item_from_campaign">
+                <input type="hidden" name="campaign_id" id="createItemCampaignId">
+                <div class="suggestion-meta-grid">
+                    <div class="suggestion-meta-card">
+                        <label for="createItemCategory"><strong>Category <span id="createItemCategoryRequiredMark" style="display:none; color:#dc2626;">*</span></strong></label>
+                        <select id="createItemCategory" name="category" class="form-select">
+                            <option value="">Use goal category</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <small id="createItemCategoryHint" style="display:none; color:#dc2626;">Please select or add a category for this goal.</small>
+                    </div>
+                    <div class="suggestion-meta-card">
+                        <label for="createItemNewCategory"><strong>Or Add New Category</strong></label>
+                        <input id="createItemNewCategory" name="new_category_name" class="form-input" type="text" placeholder="e.g. Community Tools">
+                    </div>
+                    <div class="suggestion-meta-card">
+                        <label for="createItemLocation"><strong>Pickup Location</strong></label>
+                        <input id="createItemLocation" name="location_details" class="form-input" type="text" required>
+                    </div>
+                    <div class="suggestion-meta-card">
+                        <label for="createItemCondition"><strong>Condition</strong></label>
+                        <select id="createItemCondition" name="condition" class="form-select" required>
+                            {% for value, label in item_condition_choices %}
+                            <option value="{{ value }}" {% if value == 'new' %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="suggestion-meta-card">
+                        <label for="createItemMaxBorrowDays"><strong>Max Borrow Days</strong></label>
+                        <input id="createItemMaxBorrowDays" name="max_borrow_days" class="form-input" type="number" min="1" step="1" value="14" required>
+                    </div>
+                    <div class="suggestion-meta-card">
+                        <label for="createItemSteward"><strong>Steward (Optional)</strong></label>
+                        <select id="createItemSteward" name="steward" class="form-select">
+                            <option value="">Auto-assign from goal</option>
+                            {% for steward in stewards %}
+                            <option value="{{ steward.id }}">{{ steward.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="suggestion-meta-card">
+                        <label for="createItemDailyRate"><strong>Daily Rate (Optional)</strong></label>
+                        <input id="createItemDailyRate" name="daily_rate" class="form-input" type="number" min="0" step="any" placeholder="e.g. 50">
+                    </div>
+                    <div class="suggestion-meta-card">
+                        <label for="createItemDeposit"><strong>Deposit (Optional)</strong></label>
+                        <input id="createItemDeposit" name="deposit_amount" class="form-input" type="number" min="0" step="any" placeholder="e.g. 500">
+                    </div>
+                </div>
+                <div class="modal-buttons" style="margin-top: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-outline btn-small" id="cancelCreateItemFromGoal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-small">Create Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <a href="{% url 'admin_dashboard' %}" class="logo" style="color: white;">
+                        <i class="fas fa-link"></i> Knot
+                    </a>
+                    <p>Community Management</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/admin.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.funding-progress-fill[data-progress]').forEach((el) => {
+                const raw = Number(el.getAttribute('data-progress'));
+                const normalized = Number.isFinite(raw) ? Math.max(0, Math.min(100, raw)) : 0;
+                el.style.width = `${normalized}%`;
+
+                el.classList.remove('progress-mid', 'progress-high');
+                if (normalized >= 80) {
+                    el.classList.add('progress-high');
+                } else if (normalized >= 40) {
+                    el.classList.add('progress-mid');
+                }
+            });
+        });
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) {
+                return parts.pop().split(';').shift();
+            }
+            return '';
+        }
+
+        async function adminSuggestionAction(url, actionLabel) {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                credentials: 'same-origin',
+            });
+
+            if (!response.ok) {
+                let errorMessage = `${actionLabel} failed.`;
+                try {
+                    const payload = await response.json();
+                    errorMessage = payload.error || payload.detail || errorMessage;
+                } catch (error) {
+                    // Keep default error message.
+                }
+                throw new Error(errorMessage);
+            }
+
+            return response.json();
+        }
+
+        async function adminSuggestionJsonAction(url, actionLabel, payload) {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                let errorMessage = `${actionLabel} failed.`;
+                try {
+                    const payloadData = await response.json();
+                    errorMessage = payloadData.error || payloadData.detail || errorMessage;
+                } catch (error) {
+                    // Keep default error message.
+                }
+                throw new Error(errorMessage);
+            }
+
+            return response.json();
+        }
+
+        async function adminSuggestionFormAction(url, actionLabel, formData) {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                credentials: 'same-origin',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                let errorMessage = `${actionLabel} failed.`;
+                try {
+                    const payloadData = await response.json();
+                    errorMessage = payloadData.error || payloadData.detail || errorMessage;
+                } catch (error) {
+                    // Keep default error message.
+                }
+                throw new Error(errorMessage);
+            }
+
+            return response.json();
+        }
+
+        const editSuggestionModal = document.getElementById('editSuggestionModal');
+        const editSuggestionForm = document.getElementById('editSuggestionForm');
+        const closeEditSuggestionModalBtn = document.getElementById('closeEditSuggestionModal');
+        const cancelEditSuggestionBtn = document.getElementById('cancelEditSuggestion');
+        const editSuggestionModeInput = document.getElementById('editSuggestionMode');
+        const editSuggestionSubmitBtn = document.getElementById('editSuggestionSubmitBtn');
+        const editSuggestionTitle = document.getElementById('editSuggestionTitle');
+
+        function openEditModalFromButton(button) {
+            const mode = button.getAttribute('data-edit-mode') || 'publish';
+            document.getElementById('editSuggestionId').value = button.getAttribute('data-suggestion-id') || '';
+            document.getElementById('editSuggestionName').value = button.getAttribute('data-suggestion-name') || '';
+            document.getElementById('editSuggestionDescription').value = button.getAttribute('data-suggestion-description') || '';
+            document.getElementById('editSuggestionCategory').value = button.getAttribute('data-suggestion-category-id') || '';
+            document.getElementById('editSuggestionNewCategory').value = '';
+            document.getElementById('editSuggestionCost').value = button.getAttribute('data-suggestion-cost') || '0';
+            const targetInput = document.getElementById('editSuggestionTarget');
+            targetInput.value = button.getAttribute('data-suggestion-cost') || '';
+            const imageInput = document.getElementById('editSuggestionImage');
+            const imagePreviewWrap = document.getElementById('editSuggestionImagePreviewWrap');
+            const imagePreview = document.getElementById('editSuggestionImagePreview');
+            imageInput.value = '';
+            const currentImageUrl = button.getAttribute('data-suggestion-image-url') || button.getAttribute('data-campaign-image-url') || '';
+            if (currentImageUrl) {
+                imagePreview.src = currentImageUrl;
+                imagePreviewWrap.style.display = 'block';
+            } else {
+                imagePreview.src = '';
+                imagePreviewWrap.style.display = 'none';
+            }
+
+            editSuggestionModeInput.value = mode;
+            if (mode === 'edit') {
+                editSuggestionTitle.textContent = 'Edit Existing Goal';
+                editSuggestionSubmitBtn.textContent = 'Save Goal Changes';
+                editSuggestionSubmitBtn.classList.remove('btn-success');
+                editSuggestionSubmitBtn.classList.add('btn-primary');
+            } else {
+                editSuggestionTitle.textContent = 'Edit Goal Before Publishing';
+                editSuggestionSubmitBtn.textContent = 'Publish Goal';
+                editSuggestionSubmitBtn.classList.remove('btn-primary');
+                editSuggestionSubmitBtn.classList.add('btn-success');
+            }
+
+            editSuggestionModal.style.display = 'flex';
+        }
+
+        const editSuggestionCategory = document.getElementById('editSuggestionCategory');
+        const editSuggestionNewCategory = document.getElementById('editSuggestionNewCategory');
+        editSuggestionCategory.addEventListener('change', () => {
+            if ((editSuggestionCategory.value || '').trim()) {
+                editSuggestionNewCategory.value = '';
+            }
+        });
+        editSuggestionNewCategory.addEventListener('input', () => {
+            if ((editSuggestionNewCategory.value || '').trim()) {
+                editSuggestionCategory.value = '';
+            }
+        });
+
+        document.querySelectorAll('.js-approve-suggestion').forEach((button) => {
+            button.addEventListener('click', () => openEditModalFromButton(button));
+        });
+
+        document.querySelectorAll('.js-edit-campaign').forEach((button) => {
+            button.addEventListener('click', () => openEditModalFromButton(button));
+        });
+
+        editSuggestionForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const suggestionId = document.getElementById('editSuggestionId').value;
+            const payload = new FormData();
+            payload.append('name', document.getElementById('editSuggestionName').value.trim());
+            payload.append('description', document.getElementById('editSuggestionDescription').value.trim());
+            payload.append('category', document.getElementById('editSuggestionCategory').value || '');
+            payload.append('new_category_name', document.getElementById('editSuggestionNewCategory').value.trim());
+            payload.append('estimated_cost', document.getElementById('editSuggestionCost').value);
+            payload.append('target_amount', document.getElementById('editSuggestionTarget').value);
+            const imageInput = document.getElementById('editSuggestionImage');
+            if (imageInput.files && imageInput.files[0]) {
+                payload.append('image', imageInput.files[0]);
+            }
+
+            try {
+                const responsePayload = await adminSuggestionFormAction(`/api/items/suggestions/${suggestionId}/approve/`, 'Publish', payload);
+                if (responsePayload.message) {
+                    alert(responsePayload.message);
+                }
+                window.location.reload();
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+
+        function closeEditModal() {
+            editSuggestionModal.style.display = 'none';
+            editSuggestionModeInput.value = 'publish';
+            editSuggestionTitle.textContent = 'Edit Goal Before Publishing';
+            editSuggestionSubmitBtn.textContent = 'Publish Goal';
+            editSuggestionSubmitBtn.classList.remove('btn-primary');
+            editSuggestionSubmitBtn.classList.add('btn-success');
+        }
+
+        closeEditSuggestionModalBtn.addEventListener('click', closeEditModal);
+        cancelEditSuggestionBtn.addEventListener('click', closeEditModal);
+        editSuggestionModal.addEventListener('click', (event) => {
+            if (event.target === editSuggestionModal) {
+                closeEditModal();
+            }
+        });
+
+        document.querySelectorAll('.js-delete-suggestion').forEach((button) => {
+            button.addEventListener('click', async () => {
+                const suggestionId = button.getAttribute('data-suggestion-id');
+                const suggestionName = button.getAttribute('data-suggestion-name') || 'this suggestion';
+                showConfirmModal(
+                    'Delete Suggestion',
+                    `Are you sure you want to delete "${suggestionName}"?`,
+                    async () => {
+                        try {
+                            await adminSuggestionAction(`/api/items/suggestions/${suggestionId}/delete/`, 'Delete');
+                            window.location.reload();
+                        } catch (error) {
+                            showConfirmModal('Error', error.message, () => {});
+                        }
+                    }
+                );
+            });
+        });
+
+        document.querySelectorAll('.js-reject-suggestion').forEach((button) => {
+            button.addEventListener('click', async () => {
+                const suggestionId = button.getAttribute('data-suggestion-id');
+                const suggestionName = button.getAttribute('data-suggestion-name') || 'this suggestion';
+                showConfirmModal(
+                    'Reject Suggestion',
+                    `Are you sure you want to reject "${suggestionName}"? The submitter will be notified.`,
+                    async () => {
+                        try {
+                            await adminSuggestionAction(`/api/items/suggestions/${suggestionId}/reject/`, 'Reject');
+                            window.location.reload();
+                        } catch (error) {
+                            showConfirmModal('Error', error.message, () => {});
+                        }
+                    }
+                );
+            });
+        });
+
+        document.querySelectorAll('.js-delete-item').forEach((button) => {
+            button.addEventListener('click', async () => {
+                const itemId = button.getAttribute('data-item-id');
+                const itemName = button.getAttribute('data-item-name') || 'this item';
+                showConfirmModal(
+                    'Delete Item',
+                    `Are you sure you want to delete "${itemName}"? This action cannot be undone.`,
+                    async () => {
+                        try {
+                            await adminSuggestionAction(`/api/items/items/${itemId}/delete/`, 'Delete');
+                            window.location.reload();
+                        } catch (error) {
+                            showConfirmModal('Error', error.message, () => {});
+                        }
+                    }
+                );
+            });
+        });
+
+        const detailModal = document.getElementById('suggestionDetailModal');
+        const closeDetailModalBtn = document.getElementById('closeSuggestionModal');
+
+        function openDetailModalFromButton(button) {
+            document.getElementById('detailName').textContent = button.getAttribute('data-suggestion-name') || '-';
+            document.getElementById('detailDescription').textContent = button.getAttribute('data-suggestion-description') || '-';
+            document.getElementById('detailSuggestedBy').textContent = button.getAttribute('data-suggestion-user') || '-';
+            document.getElementById('detailCategory').textContent = button.getAttribute('data-suggestion-category') || '-';
+            document.getElementById('detailCost').textContent = button.getAttribute('data-suggestion-cost') || '-';
+            document.getElementById('detailVotes').textContent = button.getAttribute('data-suggestion-votes') || '0';
+            document.getElementById('detailStatus').textContent = button.getAttribute('data-suggestion-status') || '-';
+            document.getElementById('detailCreated').textContent = button.getAttribute('data-suggestion-created') || '-';
+            detailModal.style.display = 'flex';
+        }
+
+        document.querySelectorAll('.js-view-suggestion').forEach((button) => {
+            button.addEventListener('click', () => openDetailModalFromButton(button));
+        });
+
+        closeDetailModalBtn.addEventListener('click', () => {
+            detailModal.style.display = 'none';
+        });
+
+        detailModal.addEventListener('click', (event) => {
+            if (event.target === detailModal) {
+                detailModal.style.display = 'none';
+            }
+        });
+
+        // Modal Functions
+        function showConfirmModal(title, message, onConfirm, isDangerous = true) {
+            const modal = document.getElementById('confirmModal');
+            const modalOverlay = document.getElementById('modalOverlay');
+            const modalTitle = modal.querySelector('.modal-title');
+            const modalMessage = modal.querySelector('.modal-message');
+            const modalIcon = modal.querySelector('.modal-icon');
+            const confirmBtn = modal.querySelector('[data-action="confirm"]');
+            const cancelBtn = modal.querySelector('.modal-btn-cancel');
+
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+
+            modalIcon.className = 'modal-icon';
+            if (isDangerous) {
+                modalIcon.classList.add('danger');
+                modalIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                confirmBtn.className = 'modal-btn modal-btn-danger';
+                confirmBtn.textContent = 'Confirm';
+            } else {
+                modalIcon.classList.add('info');
+                modalIcon.innerHTML = '<i class="fas fa-info-circle"></i>';
+                confirmBtn.className = 'modal-btn modal-btn-confirm';
+                confirmBtn.textContent = 'OK';
+            }
+
+            const closeModal = () => {
+                modalOverlay.classList.remove('active');
+            };
+
+            confirmBtn.onclick = () => {
+                closeModal();
+                onConfirm();
+            };
+            cancelBtn.onclick = closeModal;
+            modalOverlay.onclick = (e) => {
+                if (e.target === modalOverlay) closeModal();
+            };
+
+            modalOverlay.classList.add('active');
+        }
+
+        const createItemFromGoalModal = document.getElementById('createItemFromGoalModal');
+        const createItemFromGoalForm = document.getElementById('createItemFromGoalForm');
+        const createItemCampaignId = document.getElementById('createItemCampaignId');
+        const createItemFromGoalHint = document.getElementById('createItemFromGoalHint');
+        const createItemCategory = document.getElementById('createItemCategory');
+        const createItemCategoryRequiredMark = document.getElementById('createItemCategoryRequiredMark');
+        const createItemCategoryHint = document.getElementById('createItemCategoryHint');
+        const createItemNewCategory = document.getElementById('createItemNewCategory');
+        const createItemLocation = document.getElementById('createItemLocation');
+        const createItemCondition = document.getElementById('createItemCondition');
+        const createItemMaxBorrowDays = document.getElementById('createItemMaxBorrowDays');
+        const createItemSteward = document.getElementById('createItemSteward');
+        const createItemDailyRate = document.getElementById('createItemDailyRate');
+        const createItemDeposit = document.getElementById('createItemDeposit');
+        let createItemNeedsCategory = false;
+
+        function updateCreateItemCategoryRequirement() {
+            const hasValue = Boolean((createItemCategory.value || '').trim() || (createItemNewCategory.value || '').trim());
+            const shouldShowRequired = createItemNeedsCategory;
+            createItemCategoryRequiredMark.style.display = shouldShowRequired ? 'inline' : 'none';
+            createItemCategoryHint.style.display = shouldShowRequired && !hasValue ? 'block' : 'none';
+            createItemCategory.required = shouldShowRequired && !(createItemNewCategory.value || '').trim();
+        }
+
+        function openCreateItemFromGoalModal(button) {
+            createItemCampaignId.value = button.getAttribute('data-campaign-id') || '';
+            const campaignTitle = button.getAttribute('data-campaign-title') || 'this goal';
+            createItemFromGoalHint.textContent = `Complete the remaining item fields for "${campaignTitle}" before creating it in inventory.`;
+            const defaultCategoryId = button.getAttribute('data-default-category-id') || '';
+            createItemNeedsCategory = !defaultCategoryId;
+            createItemCategory.value = defaultCategoryId;
+            createItemNewCategory.value = '';
+            createItemLocation.value = button.getAttribute('data-default-location') || 'Community Hub';
+            createItemCondition.value = 'new';
+            createItemMaxBorrowDays.value = '14';
+            createItemSteward.value = '';
+            createItemDailyRate.value = '';
+            createItemDeposit.value = '';
+            updateCreateItemCategoryRequirement();
+            createItemFromGoalModal.style.display = 'flex';
+        }
+
+        function closeCreateItemFromGoalModal() {
+            createItemFromGoalModal.style.display = 'none';
+        }
+
+        document.querySelectorAll('.js-open-create-item-modal').forEach((button) => {
+            button.addEventListener('click', () => openCreateItemFromGoalModal(button));
+        });
+
+        document.getElementById('closeCreateItemFromGoalModal').addEventListener('click', closeCreateItemFromGoalModal);
+        document.getElementById('cancelCreateItemFromGoal').addEventListener('click', closeCreateItemFromGoalModal);
+
+        createItemCategory.addEventListener('change', () => {
+            if ((createItemCategory.value || '').trim()) {
+                createItemNewCategory.value = '';
+            }
+            updateCreateItemCategoryRequirement();
+        });
+        createItemNewCategory.addEventListener('input', () => {
+            if ((createItemNewCategory.value || '').trim()) {
+                createItemCategory.value = '';
+            }
+            updateCreateItemCategoryRequirement();
+        });
+
+        createItemFromGoalModal.addEventListener('click', (event) => {
+            if (event.target === createItemFromGoalModal) {
+                closeCreateItemFromGoalModal();
+            }
+        });
+
+        createItemFromGoalForm.addEventListener('submit', (event) => {
+            if (createItemNeedsCategory && !(createItemCategory.value || '').trim() && !(createItemNewCategory.value || '').trim()) {
+                event.preventDefault();
+                updateCreateItemCategoryRequirement();
+                return;
+            }
+            closeCreateItemFromGoalModal();
+        });
+    </script>
+
+    <!-- Modal Overlays -->
+    <div id="modalOverlay" class="modal-overlay">
+        <!-- Confirm Modal -->
+        <div id="confirmModal" class="modal-box">
+            <div class="modal-icon danger"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 class="modal-title">Confirm Action</h3>
+            <p class="modal-message">Are you sure?</p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel">Cancel</button>
+                <button class="modal-btn modal-btn-danger" data-action="confirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+    <script src="{% static 'js/admin-dropdown.js' %}"></script>
+</body>
+</html>
+
+

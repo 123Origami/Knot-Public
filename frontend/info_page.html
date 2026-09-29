@@ -1,0 +1,55 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} - Knot</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="{% url 'index' %}" class="logo">
+                <i class="fas fa-link"></i> Knot
+            </a>
+            <ul class="nav-menu">
+                <li><a href="{% url 'index' %}">Home</a></li>
+                <li><a href="{% url 'browse' %}">Browse Items</a></li>
+                <li><a href="{% url 'suggest' %}">Suggest Item</a></li>
+                <li><a href="{% url 'goals' %}">Community Goals</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="page-header">
+        <div class="container">
+            <h1>{{ page_heading }}</h1>
+            <p>Platform information</p>
+        </div>
+    </section>
+
+    <section class="dashboard">
+        <div class="container">
+            <div class="admin-card">
+                <div class="admin-card-body">
+                    <p style="font-size: 1.05rem; line-height: 1.7;">{{ page_body }}</p>
+                    <div style="margin-top: 1.25rem;">
+                        <a href="{% url 'index' %}" class="btn btn-outline">Back to Home</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2026 Knot Platform. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

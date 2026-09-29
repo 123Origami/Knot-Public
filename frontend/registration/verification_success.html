@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Email Verified - Knot</title>
+    <script src="{% static 'js/theme-bootstrap.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+</head>
+<body>
+    <section class="auth-section">
+        <div class="container">
+            <div class="auth-container">
+                <div class="auth-header">
+                    <i class="fas fa-check-circle" style="font-size: 4rem; color: #68d391;"></i>
+                    <h1>Email Verified!</h1>
+                    <p>Your email has been successfully verified.</p>
+                </div>
+                <div class="auth-card">
+                    <div style="text-align: center; padding: 2rem;">
+                        <a href="{% url 'user_dashboard' %}" class="btn btn-primary">Go to Dashboard</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+</html>

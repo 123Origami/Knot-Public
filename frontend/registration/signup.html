@@ -1,0 +1,486 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Knot</title>
+    <script src="{% static 'js/theme-bootstrap.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="{% url 'index' %}" class="logo">
+                <i class="fas fa-link"></i> Knot
+            </a>
+            <ul class="nav-menu">
+                <li><a href="{% url 'index' %}">Home</a></li>
+                <li><a href="{% url 'browse' %}">Browse Items</a></li>
+                <li><a href="{% url 'suggest' %}">Suggest Item</a></li>
+                <li><a href="{% url 'goals' %}">Community Goals</a></li>
+                <li class="auth-buttons">
+                    <a href="{% url 'login' %}" class="btn-login">Login</a>
+                    <a href="{% url 'signup' %}" class="btn-signup active">Sign Up</a>
+                </li>
+            </ul>
+            <button class="hamburger" id="hamburger">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Signup Section -->
+    <section class="auth-section">
+        <div class="container">
+            <div class="auth-container">
+                <div class="auth-header">
+                    <h1>Join Our Community</h1>
+                    <p>Create an account to start sharing resources and building stronger communities</p>
+                </div>
+
+                <div class="auth-card">
+                    <!-- Account Type Selection -->
+                    <div class="account-type-selection">
+                        <h3>Select Account Type</h3>
+                        <div class="account-types">
+                            <div class="account-type-card active" data-type="member">
+                                <div class="account-icon">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <h4>Community Member</h4>
+                                <ul>
+                                    <li><i class="fas fa-check"></i> Borrow & share items</li>
+                                    <li><i class="fas fa-check"></i> Vote on community goals</li>
+                                    <li><i class="fas fa-check"></i> Suggest new items</li>
+                                    <li><i class="fas fa-check"></i> Join discussions</li>
+                                </ul>
+                            </div>
+                            <div class="account-type-card" data-type="admin">
+                                <div class="account-icon">
+                                    <i class="fas fa-cog"></i>
+                                </div>
+                                <h4>Community Admin</h4>
+                                <ul>
+                                    <li><i class="fas fa-check"></i> All member features</li>
+                                    <li><i class="fas fa-check"></i> Approve new members</li>
+                                    <li><i class="fas fa-check"></i> Manage community items</li>
+                                    <li><i class="fas fa-check"></i> Set up community goals</li>
+                                </ul>
+                                <span class="badge badge-info">Requires Verification</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Signup Form -->
+                    <form id="signupForm" class="auth-form" method="post" action="{% url 'signup' %}" enctype="multipart/form-data" >
+                        {% csrf_token %} 
+                        <input type="hidden" id="accountType" name="account_type" value="member">
+                        
+                        <!-- Display all messages from backend (errors and success) -->
+                        {% if messages %}
+                            <div class="alert-messages" style="margin-bottom: 1.5rem;">
+                                {% for message in messages %}
+                                    <div class="alert alert-{{ message.tags|default:'info' }}" role="alert" style="padding: 1rem; border-radius: 0.5rem; margin-bottom: 0.5rem; display: flex; align-items: flex-start; gap: 0.75rem;">
+                                        <i class="fas fa-{% if 'error' in message.tags %}exclamation-circle{% elif 'warning' in message.tags %}exclamation-triangle{% elif 'success' in message.tags %}check-circle{% else %}info-circle{% endif %}" style="margin-top: 0.25rem; flex-shrink: 0;"></i>
+                                        <span>{{ message }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="username">Username *</label>
+                                <input type="text" id="username" name="username" class="form-input" required>
+                                <small class="form-help">This will be your public username</small>
+                                <small class="form-error" id="error-username" style="display:none;"></small>
+                            </div>
+                            <div class="form-group">
+                                <label for="firstName">First Name</label>
+                                <input type="text" id="firstName"  name="first_name" class="form-input" required>
+                                <small class="form-error" id="error-first_name" style="display:none;"></small>
+                            </div>
+                            <div class="form-group">
+                                <label for="lastName">Last Name</label>
+                                <input type="text" id="lastName"  name="last_name" class="form-input" required>
+                                <small class="form-error" id="error-last_name" style="display:none;"></small>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email" class="form-input" required>
+                            <small class="form-error" id="error-email" style="display:none;"></small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" name="phone_number" class="form-input" 
+                                   placeholder=" 0712345678">
+                            <small class="form-help">Kenyan format: 0712345678 (exactly 10 digits)</small>
+                            <small class="form-error" id="error-phone_number" style="display:none;"></small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="location">Location</label>
+                            <select id="location" name="location" class="form-select">
+                                <option value="">-- Select a location --</option>
+                                <option value="Westlands, Nairobi">Westlands, Nairobi</option>
+                            </select>
+                            <small class="form-help">Your neighborhood or general location</small>
+                        </div>
+                            
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <div class="input-with-icon">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="password" name="password" class="form-input" required>
+                            </div>
+                            <div class="password-strength">
+                                <div class="strength-bar"></div>
+                                <span class="strength-text">Password strength: weak</span>
+                            </div>
+                            <div class="password-requirements" style="font-size: 0.85rem; color: #666; margin-top: 0.75rem; background: #f5f5f5; padding: 0.75rem; border-radius: 0.4rem;">
+                                <strong style="display: block; margin-bottom: 0.5rem;">Password must contain:</strong>
+                                <ul style="margin: 0; padding: 0; list-style: none;">
+                                    <li id="req-length" style="color: #999; margin-bottom: 0.25rem;"><i class="fas fa-circle" style="font-size: 0.35rem; margin-right: 0.5rem; color: #999;"></i><span>At least 8 characters</span></li>
+                                    <li id="req-upper" style="color: #999; margin-bottom: 0.25rem;"><i class="fas fa-circle" style="font-size: 0.35rem; margin-right: 0.5rem; color: #999;"></i><span>Uppercase letter (A-Z)</span></li>
+                                    <li id="req-lower" style="color: #999; margin-bottom: 0.25rem;"><i class="fas fa-circle" style="font-size: 0.35rem; margin-right: 0.5rem; color: #999;"></i><span>Lowercase letter (a-z)</span></li>
+                                    <li id="req-digit" style="color: #999; margin-bottom: 0.25rem;"><i class="fas fa-circle" style="font-size: 0.35rem; margin-right: 0.5rem; color: #999;"></i><span>Number (0-9)</span></li>
+                                    <li id="req-special" style="color: #999;"><i class="fas fa-circle" style="font-size: 0.35rem; margin-right: 0.5rem; color: #999;"></i><span>Special character (!@#$%^&*)</span></li>
+                                </ul>
+                            </div>
+                            <small class="form-error" id="error-password" style="display:none;"></small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirm Password</label>
+                            <input type="password" id="confirmPassword" name="password2" class="form-input" required>
+                            <small id="passwordMatchError" class="text-danger" style="display: none; color:#f44336; font-weight: 500;">Passwords do not match.</small>
+                            <small class="form-error" id="error-password2" style="display:none;"></small>
+                        </div>
+
+                        <div class="form-group" id="adminRequestGroup" style="display: none;">
+                            <label for="adminReason">Why do you want to be an admin?</label>
+                            <textarea id="adminReason" name="admin_reason" class="form-textarea" 
+                                      placeholder="Please explain why you're interested in becoming a community admin..."></textarea>
+                            <small class="form-help">This helps us understand your motivation and background.</small>
+
+                            <label for="adminIdPhoto" style="margin-top: 14px;">Upload ID Photo *</label>
+                            <input type="file" id="adminIdPhoto" name="admin_id_photo" class="form-input" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                            <small class="form-help">Required for admin requests. Accepted: JPG, PNG, WEBP. Max 5MB.</small>
+                            <small class="form-error" id="error-admin_id_photo" style="display:none;"></small>
+                        </div>
+
+                        <div class="form-group form-checkbox">
+                            <input type="checkbox" id="terms" name="terms" required>
+                            <label for="terms">
+                                I agree to the <a href="{% url 'terms_of_service' %}">Terms of Service</a> and <a href="{% url 'privacy_policy' %}">Privacy Policy</a>
+                            </label>
+                        </div>
+
+                        <div class="form-group form-checkbox">
+                            <input type="checkbox" id="newsletter" name="newsletter" checked>
+                            <label for="newsletter">
+                                Subscribe to our newsletter for updates and community news
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-user-plus"></i> Create Account
+                        </button>
+
+                        <div class="auth-footer">
+                            <p>Already have an account? <a href="{% url 'login' %}">Login here</a></p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <a href="{% url 'index' %}" class="logo">
+                        <i class="fas fa-link"></i> Knot
+                    </a>
+                    <p>Tying Communities Together Through Shared Resources</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/app.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Account type selection
+            const accountCards = document.querySelectorAll('.account-type-card');
+            const adminRequestGroup = document.getElementById('adminRequestGroup');
+            const adminIdPhotoInput = document.getElementById('adminIdPhoto');
+            
+            accountCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    accountCards.forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const type = this.getAttribute('data-type');
+                    document.getElementById('accountType').value = type;
+                    if (type === 'admin') {
+                        adminRequestGroup.style.display = 'block';
+                        document.getElementById('adminReason').required = true;
+                        if (adminIdPhotoInput) {
+                            adminIdPhotoInput.required = true;
+                        }
+                    } else {
+                        adminRequestGroup.style.display = 'none';
+                        document.getElementById('adminReason').value = '';
+                        document.getElementById('adminReason').required = false;
+                        if (adminIdPhotoInput) {
+                            adminIdPhotoInput.value = '';
+                            adminIdPhotoInput.required = false;
+                        }
+                    }
+                });
+            });
+
+            // Helper: Show/hide field errors
+            function showFieldError(fieldName, message) {
+                const errorEl = document.getElementById(`error-${fieldName}`);
+                if (errorEl) {
+                    if (message) {
+                        errorEl.textContent = message;
+                        errorEl.style.display = 'block';
+                    } else {
+                        errorEl.style.display = 'none';
+                    }
+                }
+            }
+
+            // Helper: Update password requirements checklist
+            function updatePasswordRequirements(password) {
+                const reqs = {
+                    'req-length': password.length >= 8,
+                    'req-upper': /[A-Z]/.test(password),
+                    'req-lower': /[a-z]/.test(password),
+                    'req-digit': /[0-9]/.test(password),
+                    'req-special': /[^A-Za-z0-9]/.test(password),
+                };
+
+                Object.entries(reqs).forEach(([id, met]) => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        const icon = el.querySelector('i');
+                        if (met) {
+                            el.style.color = '#4caf50';
+                            if (icon) icon.style.color = '#4caf50';
+                        } else {
+                            el.style.color = '#999';
+                            if (icon) icon.style.color = '#999';
+                        }
+                    }
+                });
+                return reqs;
+            }
+
+            // Password strength checker
+            const passwordInput = document.getElementById('password');
+            const strengthBar = document.querySelector('.strength-bar');
+            const strengthText = document.querySelector('.strength-text');
+            
+            passwordInput.addEventListener('input', function() {
+                const password = this.value;
+                const reqs = updatePasswordRequirements(password);
+                let strength = Object.values(reqs).filter(Boolean).length;
+                
+                // Update strength bar
+                const width = strength * 20;
+                strengthBar.style.width = width + '%';
+                
+                // Update text and color
+                const strengthLevels = ['Very weak', 'Weak', 'Weak', 'Fair', 'Good', 'Strong'];
+                const colors = ['#f44336', '#ff9800', '#ffc107', '#8bc34a', '#4caf50', '#4caf50'];
+                
+                strengthText.textContent = `Password strength: ${strengthLevels[strength]}`;
+                strengthBar.style.backgroundColor = colors[strength];
+            });
+
+            // Real-time phone validation
+            document.getElementById('phone').addEventListener('blur', function() {
+                const value = this.value.trim();
+                if (value) {
+                    if (!/^\d+$/.test(value)) {
+                        showFieldError('phone_number', 'Phone number must contain only digits');
+                    } else if (value.length !== 10) {
+                        showFieldError('phone_number', `Phone number must be exactly 10 digits (you entered ${value.length})`);
+                    } else {
+                        showFieldError('phone_number', '');
+                    }
+                } else {
+                    showFieldError('phone_number', '');
+                }
+            });
+
+            // Real-time name validation
+            document.getElementById('firstName').addEventListener('blur', function() {
+                const value = this.value.trim();
+                if (value && /^\d+$/.test(value)) {
+                    showFieldError('first_name', 'First name cannot be only numbers');
+                } else {
+                    showFieldError('first_name', '');
+                }
+            });
+
+            document.getElementById('lastName').addEventListener('blur', function() {
+                const value = this.value.trim();
+                if (value && /^\d+$/.test(value)) {
+                    showFieldError('last_name', 'Last name cannot be only numbers');
+                } else {
+                    showFieldError('last_name', '');
+                }
+            });
+
+            // Real-time username validation
+            document.getElementById('username').addEventListener('blur', function() {
+                const value = this.value.trim();
+                if (value && value.length < 3) {
+                    showFieldError('username', 'Username must be at least 3 characters');
+                } else {
+                    showFieldError('username', '');
+                }
+            });
+
+            // Form validation
+            // Form validation and submission
+            document.getElementById('signupForm').addEventListener('submit', function(e) {
+                const firstName = document.getElementById('firstName').value.trim();
+                const lastName = document.getElementById('lastName').value.trim();
+                const username = document.getElementById('username').value.trim();
+                const phone = document.getElementById('phone').value.trim();
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                const terms = document.getElementById('terms').checked;
+                const passwordMatchError = document.getElementById('passwordMatchError');
+    
+                // Clear previous errors
+                document.querySelectorAll('.form-error').forEach(el => {
+                    el.style.display = 'none';
+                });
+
+                let hasErrors = false;
+    
+                // Validation
+                if (!terms) {
+                    e.preventDefault();
+                    showFieldError('terms', 'You must agree to the terms and conditions');
+                    showNotification('You must agree to the terms and conditions', 'error');
+                    return false;
+                }
+                
+                if (password !== confirmPassword) {
+                    e.preventDefault();
+                    hasErrors = true;
+                    passwordMatchError.style.display = 'block';
+                    showFieldError('password2', 'Passwords do not match');
+                } else {
+                    passwordMatchError.style.display = 'none';
+                }
+
+                // Password complexity check
+                if (password.length < 8) {
+                    e.preventDefault();
+                    hasErrors = true;
+                    showFieldError('password', 'Password must be at least 8 characters');
+                }
+                
+                if (!/[A-Z]/.test(password)) {
+                    e.preventDefault();
+                    hasErrors = true;
+                    showFieldError('password', 'Password must include an uppercase letter');
+                }
+                
+                if (!/[a-z]/.test(password)) {
+                    e.preventDefault();
+                    hasErrors = true;
+                    showFieldError('password', 'Password must include a lowercase letter');
+                }
+                
+                if (!/[0-9]/.test(password)) {
+                    e.preventDefault();
+                    hasErrors = true;
+                    showFieldError('password', 'Password must include a digit');
+                }
+                
+                if (!/[^A-Za-z0-9]/.test(password)) {
+                    e.preventDefault();
+                    hasErrors = true;
+                    showFieldError('password', 'Password must include a special character (!@#$%^&*)');
+                }
+
+                // Name validation
+                if (firstName && /^\d+$/.test(firstName)) {
+                    e.preventDefault();
+                    hasErrors = true;
+                    showFieldError('first_name', 'First name cannot be only numbers');
+                }
+
+                if (lastName && /^\d+$/.test(lastName)) {
+                    e.preventDefault();
+                    hasErrors = true;
+                    showFieldError('last_name', 'Last name cannot be only numbers');
+                }
+
+                // Phone validation
+                if (phone) {
+                    if (!/^\d+$/.test(phone)) {
+                        e.preventDefault();
+                        hasErrors = true;
+                        showFieldError('phone_number', 'Phone number must contain only digits');
+                    } else if (phone.length !== 10) {
+                        e.preventDefault();
+                        hasErrors = true;
+                        showFieldError('phone_number', `Phone number must be exactly 10 digits (you entered ${phone.length})`);
+                    }
+                }
+                
+                if (!hasErrors) {
+                    // If validation passes, show loading state
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+                    submitBtn.disabled = true;
+                }
+                
+                return !hasErrors;
+            });
+
+            document.getElementById('confirmPassword').addEventListener('input', function() {
+                const password = document.getElementById('password').value;
+                const passwordMatchError = document.getElementById('passwordMatchError');
+                if (this.value && password !== this.value) {
+                    passwordMatchError.style.display = 'block';
+                } else {
+                    passwordMatchError.style.display = 'none';
+                }
+            });
+
+            document.getElementById('password').addEventListener('input', function() {
+                const confirmPassword = document.getElementById('confirmPassword');
+                const passwordMatchError = document.getElementById('passwordMatchError');
+                if (confirmPassword.value && this.value !== confirmPassword.value) {
+                    passwordMatchError.style.display = 'block';
+                } else {
+                    passwordMatchError.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

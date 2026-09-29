@@ -1,0 +1,476 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ item.name }} - Knot</title>
+    <script src="{% static 'js/theme-bootstrap.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        
+        .detail-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 3rem;
+            padding: 3rem 0;
+        }
+        .item-gallery {
+            margin-bottom: 2rem;
+        }
+        .main-image {
+            width: 100%;
+            height: 400px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f0f0f0;
+            margin-bottom: 1rem;
+        }
+        .main-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .thumbnail-images {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+        }
+        .thumbnail {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+            flex-shrink: 0;
+        }
+        .thumbnail.active {
+            border-color: #5a67d8;
+        }
+        .thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .item-features {
+            list-style: none;
+            margin: 1rem 0;
+        }
+        .item-features li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .item-features i {
+            width: 20px;
+            color: #5a67d8;
+        }
+        .owner-card {
+            background: #fff5f9;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .owner-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #ffebf3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        .booking-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 100px;
+        }
+        .booking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .price .amount {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #5a67d8;
+        }
+        .date-range {
+            margin: 1rem 0;
+        }
+        .date-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+        .booking-summary {
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background: #fff5f9;
+            border-radius: 8px;
+        }
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+        }
+        .summary-item.total {
+            border-top: 1px solid #f8d0e0;
+            margin-top: 0.5rem;
+            padding-top: 0.75rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .review-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 1rem;
+        }
+        .review-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .review-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #ffebf3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        .review-stars {
+            color: #fbbf24;
+        }
+        .review-form-card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+        .review-form-card h3 {
+            margin-bottom: 0.5rem;
+        }
+        .review-form-card p {
+            color: var(--gray-color);
+            margin-bottom: 1rem;
+        }
+        .review-form-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        .detail-booking-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        @media (max-width: 768px) {
+            .detail-container {
+                grid-template-columns: 1fr;
+            }
+            .booking-card {
+                position: static;
+            }
+            .main-image {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% csrf_token %}
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="{% if user.is_authenticated %}{% url 'user_dashboard' %}{% else %}{% url 'index' %}{% endif %}" class="logo">
+                <i class="fas fa-link"></i> Knot
+            </a>
+            <ul class="nav-menu">
+                <li><a href="{% url 'user_dashboard' %}">Dashboard</a></li>
+                <li><a href="{% url 'browse' %}">Browse Items</a></li>
+                <li><a href="{% url 'suggest' %}">Suggest Item</a></li>
+                <li><a href="{% url 'goals' %}">Community Goals</a></li>
+               <li class="user-menu">
+                    <div class="user-dropdown">
+                        {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" alt="User" class="user-avatar">
+                        {% else %}
+                        <img src="https://ui-avatars.com/api/?name={{ user.first_name|default:user.username }}&background=ffebf3&color=2d3748" 
+                            alt="User" class="user-avatar">
+                        {% endif %}
+                        <span class="user-name">{{ user.first_name|default:user.username }}</span>
+                        <i class="fas fa-chevron-down"></i>
+                        <div class="dropdown-menu">
+                            <!-- FIXED: Changed from 'dashboard' to 'user_dashboard' -->
+                            <a href="{% url 'user_dashboard' %}" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                            <a href="{% url 'profile' %}"><i class="fas fa-user"></i> Profile</a>
+                    
+                            <div class="dropdown-toggle-row">
+                                <span><i class="fas fa-moon"></i> Dark Mode</span>
+                                <label class="switch switch-compact" for="darkModeToggle">
+                                    <input type="checkbox" id="darkModeToggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <a href="{% url 'logout' %}" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+            <button class="hamburger">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="detail-container">
+            <div>
+                <div class="item-gallery">
+                    <div class="main-image">
+                        <img src="{{ item.display_image_url }}" alt="{{ item.name }}">
+                    </div>
+                    {% if item.images.exists %}
+                    <div class="thumbnail-images">
+                        {% for image in item.images.all %}
+                            <div class="thumbnail {% if forloop.first %}active{% endif %}" data-image="{{ image.image.url }}">
+                                <img src="{{ image.image.url }}" alt="{{ item.name }}">
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="thumbnail-images">
+                        <div class="thumbnail active" data-image="{{ item.display_image_url }}">
+                            <img src="{{ item.display_image_url }}" alt="{{ item.name }}">
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <h1>{{ item.name }}</h1>
+                <div class="item-meta">
+                    <span><i class="fas fa-tag"></i> {{ item.category.name|default:"General" }}</span>
+                    <span><i class="fas fa-map-marker-alt"></i> {{ item.location_details }}</span>
+                    <span><i class="fas fa-clock"></i> {{ item.condition|title }}</span>
+                </div>
+                
+                <h2>Description</h2>
+                <p>{{ item.description|linebreaks }}</p>
+                
+                <h2>Features</h2>
+                <ul class="item-features">
+                    <li><i class="fas fa-check-circle"></i> Max borrow: {{ item.max_borrow_days }} days</li>
+                    {% if item.deposit_amount %}
+                    <li><i class="fas fa-shield-alt"></i> Deposit: Ksh {{ item.deposit_amount }}</li>
+                    {% endif %}
+                    <li><i class="fas fa-chart-line"></i> Borrowed {{ item_bookings_made }} times</li>
+                </ul>
+
+
+<h2>About the Steward</h2>
+<div class="owner-card">
+    <div class="owner-avatar">
+        {{ item.steward.username|first|upper }}
+    </div>
+    <div>
+        <h3>{{ item.steward.get_full_name|default:item.steward.username }}</h3>
+        <p>Member since {{ item.steward.date_joined|date:"F Y" }}</p>
+        <p>
+            <i class="fas fa-star" style="color: #fbbf24;"></i> {{ steward_current_rating|default:"0" }}
+            ({{ steward_current_total_reviews|default:"0" }} borrower reviews)
+        </p>
+    </div>
+</div>
+            </div>
+
+            <div>
+                <div class="booking-card">
+                    <div class="booking-header">
+                        <div class="price">
+                            <span class="amount">Ksh {{ item.daily_rate|default:0 }}</span>
+                            <span>/day</span>
+                        </div>
+                        {% if item.deposit_amount %}
+                            <div>+ Ksh {{ item.deposit_amount }} deposit</div>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <p style="margin-bottom: 0.75rem; color: #4a5568;">
+                            Bookings are made from the dedicated booking calendar page.
+                        </p>
+                        <div class="detail-booking-actions">
+                            <a href="{% url 'book_item_slug' item.slug %}" class="btn btn-primary btn-block">
+                                <i class="fas fa-calendar-check"></i> Go to Booking Page
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2>Previous Borrower Reviews</h2>
+        <p style="color: var(--gray-color); margin-bottom: 0.75rem;">
+            This item has {{ item_reviews_count }} borrower review{{ item_reviews_count|pluralize }}{% if item_reviews_count %} with an average of {{ item_reviews_avg }}/5{% endif %}.
+        </p>
+        {% if user.is_authenticated and pending_item_review_booking %}
+        <div class="review-form-card">
+            <h3>Leave a Review</h3>
+            <p>You can review this item because your booking {{ pending_item_review_booking.booking_id }} has been returned.</p>
+            <form id="itemReviewForm">
+                <input type="hidden" id="itemReviewBookingId" value="{{ pending_item_review_booking.id }}">
+                <input type="hidden" id="itemReviewType" value="borrower_to_steward">
+                <div class="form-group">
+                    <label class="form-label" for="itemReviewRating">Rating (1-5)</label>
+                    <input class="form-input" id="itemReviewRating" type="number" min="1" max="5" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="itemReviewComment">Review</label>
+                    <textarea class="form-textarea" id="itemReviewComment" rows="4" placeholder="Share your experience with this item and steward" required></textarea>
+                </div>
+                <div class="review-form-actions">
+                    <button type="submit" class="btn btn-primary" id="submitItemReviewBtn">
+                        <i class="fas fa-star"></i> Submit Review
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% elif user.is_authenticated and has_completed_booking_for_item and has_submitted_item_review %}
+        <div class="review-form-card">
+            <h3>Review Submitted</h3>
+            <p>Thanks for your feedback. You have already reviewed this item for your completed booking.</p>
+        </div>
+        {% elif user.is_authenticated %}
+        <div class="review-form-card">
+            <h3>When Can I Review?</h3>
+            <p>You can submit a review after your booking is marked returned/completed by the steward or admin.</p>
+        </div>
+        {% else %}
+        <div class="review-form-card">
+            <h3>Want to Review This Item?</h3>
+            <p><a href="{% url 'login' %}">Log in</a> and complete a booking return to leave a verified review.</p>
+        </div>
+        {% endif %}
+
+        <div id="reviewsList">
+            {% if item_reviews %}
+            {% for review in item_reviews %}
+            <div class="review-card">
+                <div class="review-header">
+                    <div class="review-avatar">{{ review.reviewer.username|first|upper }}</div>
+                    <div>
+                        <strong>{{ review.reviewer.username }}</strong>
+                        <div class="review-stars">
+                            {% for _ in "12345" %}
+                                {% if forloop.counter <= review.rating %}
+                                    <i class="fas fa-star"></i>
+                                {% else %}
+                                    <i class="far fa-star"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <small style="margin-left: auto;">{{ review.created_at|date:"M d, Y" }}</small>
+                </div>
+                <p>{{ review.comment }}</p>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p style="text-align: center; padding: 2rem;">No reviews yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <a href="{% url 'index' %}" class="logo" style="color: white;">
+                        <i class="fas fa-link"></i> Knot
+                    </a>
+                    <p>Tying Communities Together Through Shared Resources</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Pass data to JavaScript -->
+    <script id="itemDataJson" type="application/json">{{ item_data_json|safe }}</script>
+    <script>
+        var itemData = {};
+        try {
+            var itemDataNode = document.getElementById('itemDataJson');
+            itemData = itemDataNode ? JSON.parse(itemDataNode.textContent) : {};
+        } catch (e) {
+            console.error('Failed to parse item data JSON:', e);
+            itemData = {};
+        }
+    </script>
+    
+    <!-- External JavaScript -->
+    <script src="{% static 'js/app.js' %}"></script>
+    <script src="{% static 'js/item-detail.js' %}"></script>
+    
+    <!-- Initialize JavaScript with data -->
+    <script>
+        initItemData(itemData);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // User dropdown toggle
+            const userDropdown = document.querySelector('.user-dropdown');
+            if (userDropdown) {
+                userDropdown.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    this.classList.toggle('active');
+                });
+            }
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                document.querySelectorAll('.user-dropdown').forEach(function(dropdown) {
+                    if (!dropdown.contains(e.target)) {
+                        dropdown.classList.remove('active');
+                    }
+                });
+            });
+
+            // Hamburger menu
+            const hamburger = document.querySelector('.hamburger');
+            const navMenu = document.querySelector('.nav-menu');
+            if (hamburger && navMenu) {
+                hamburger.addEventListener('click', function() {
+                    navMenu.classList.toggle('active');
+                    hamburger.classList.toggle('active');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

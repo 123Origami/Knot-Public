@@ -1,0 +1,582 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - Knot Admin</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+        .filter-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .status-badge.verified {
+            background: rgba(104, 211, 145, 0.2);
+            color: var(--success-color);
+        }
+        .status-badge.pending {
+            background: rgba(246, 173, 85, 0.2);
+            color: var(--warning-color);
+        }
+        .status-badge.unverified {
+            background: rgba(252, 129, 129, 0.2);
+            color: var(--danger-color);
+        }
+        .action-menu {
+            position: relative;
+            display: inline-block;
+        }
+        .action-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            background: white;
+            box-shadow: var(--shadow);
+            border-radius: var(--border-radius);
+            min-width: 150px;
+            z-index: 100;
+        }
+        .action-menu.open .action-dropdown {
+            display: block;
+        }
+        .action-dropdown a {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: var(--dark-color);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        .action-dropdown a:hover {
+            background: var(--primary-light);
+        }
+        /* Custom Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.95);
+            }
+            to { 
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        .modal-box {
+            position: relative;
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease-out;
+        }
+        .modal-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        .modal-icon.danger {
+            background: rgba(220, 38, 38, 0.1);
+            color: #dc2626;
+        }
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #1f2937;
+        }
+        .modal-message {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+        .modal-btn {
+            padding: 0.625rem 1.25rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+        }
+        .modal-btn-cancel {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        .modal-btn-cancel:hover {
+            background: #e5e7eb;
+        }
+        .modal-btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+        .modal-btn-danger:hover {
+            background: #b91c1c;
+        }
+        /* Targeted fix for the Switch to Member link */
+.admin-user-action-link {
+    color: #000000 !important; /* Pure black */
+    font-weight: 600; /* Making it slightly bolder helps it look "darker" */
+}
+
+.admin-user-action-link i {
+    color: #000000 !important; /* Ensures the icon darkens too */
+}
+
+/* Optional: Add a hover effect so the user knows it's clickable */
+.admin-user-action-link:hover {
+    color: #be185d !important; /* Switches to your primary burgundy on hover */
+}
+/* Create a bridge so the hover doesn't break when moving mouse down */
+.admin-dropdown-menu::before {
+    content: "";
+    position: absolute;
+    top: -20px; /* Adjust this to cover the gap between button and menu */
+    left: 0;
+    right: 0;
+    height: 20px;
+    display: block;
+}
+
+/* Ensure the parent container keeps the menu open while hovering the bridge */
+.admin-user-dropdown:hover .admin-dropdown-menu {
+    display: block;
+}
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar admin-navbar">
+        <div class="container nav-container">
+            <a href="{% url 'admin_dashboard' %}" class="logo">
+                <i class="fas fa-link"></i> Knot Admin
+            </a>
+            <ul class="nav-menu">
+                <li><a href="{% url 'admin_dashboard' %}" {% if request.resolver_match.url_name == 'admin_dashboard' %}class="active"{% endif %}><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="{% url 'admin_users' %}" {% if request.resolver_match.url_name == 'admin_users' %}class="active"{% endif %}><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="{% url 'admin_items' %}" {% if request.resolver_match.url_name == 'admin_items' %}class="active"{% endif %}><i class="fas fa-box"></i> Items</a></li>
+                <li><a href="{% url 'admin_suggestions' %}" {% if request.resolver_match.url_name == 'admin_suggestions' %}class="active"{% endif %}><i class="fas fa-lightbulb"></i> Suggestions</a></li>
+                <li><a href="{% url 'admin_bookings' %}" {% if request.resolver_match.url_name == 'admin_bookings' %}class="active"{% endif %}><i class="fas fa-calendar-check"></i> Bookings</a></li>
+                <li><a href="{% url 'admin_request_list' %}" {% if request.resolver_match.url_name == 'admin_request_list' %}class="active"{% endif %}><i class="fas fa-user-shield"></i> Requests</a></li>
+                <li><a href="{% url 'admin_reports' %}" {% if request.resolver_match.url_name == 'admin_reports' %}class="active"{% endif %}><i class="fas fa-chart-bar"></i> Reports</a></li>
+                <li class="auth-buttons">
+                    <div class="admin-user-dropdown">
+                        <button type="button" class="admin-user-toggle admin-user-pill" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-user-shield"></i>
+                            <span>{{ user.username }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="admin-dropdown-menu">
+                            <a href="{% url 'user_dashboard' %}" class="admin-user-action-link">
+                                <i class="fas fa-user"></i>
+                                <span>Switch to Member Panel</span>
+                            </a>
+                            <a href="{% url 'logout' %}" class="admin-user-action-link danger">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                            </a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+            <button class="hamburger" id="hamburger">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1><i class="fas fa-users"></i> User Management</h1>
+            <p>View and manage all community members</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <section class="dashboard">
+        <div class="container">
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Filters -->
+            <div class="filter-section">
+                <form method="get" action="{% url 'admin_users' %}">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3><i class="fas fa-filter"></i> Filters</h3>
+                        <a class="btn btn-small btn-outline" href="{% url 'admin_users' %}">Reset Filters</a>
+                    </div>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <div style="flex: 1;">
+                            <input type="text" class="form-input" placeholder="Search users..." id="searchInput" name="q" value="{{ search_query }}">
+                        </div>
+                        <div>
+                            <select class="form-select" id="verificationFilter" name="verification">
+                                <option value="" {% if not selected_verification %}selected{% endif %}>All Verification Levels</option>
+                                <option value="0" {% if selected_verification == '0' %}selected{% endif %}>Unverified</option>
+                                <option value="1" {% if selected_verification == '1' %}selected{% endif %}>Email Verified</option>
+                                <option value="2" {% if selected_verification == '2' %}selected{% endif %}>Phone Verified</option>
+                                <option value="3" {% if selected_verification == '3' %}selected{% endif %}>ID Verified</option>
+                            </select>
+                        </div>
+                        <div>
+                            <select class="form-select" id="statusFilter" name="status">
+                                <option value="" {% if not selected_status %}selected{% endif %}>All Status</option>
+                                <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active</option>
+                                <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactive</option>
+                                <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending Admin</option>
+                                <option value="approved" {% if selected_status == 'approved' %}selected{% endif %}>Approved Admin</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary" type="submit">Apply Filters</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            {% if search_query or selected_verification or selected_status %}
+            <p style="margin: -0.75rem 0 1.5rem; color: var(--gray-color);">
+                Showing {{ users.paginator.count }} filtered user{{ users.paginator.count|pluralize }}.
+            </p>
+            {% endif %}
+
+            <!-- Stats Cards -->
+            <div class="stats-grid" style="margin-bottom: 2rem;">
+                <div class="stat-card">
+                    <div class="stat-number">{{ total_count|default:"0" }}</div>
+                    <div class="stat-label">Total Users</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ active_count|default:"0" }}</div>
+                    <div class="stat-label">Active</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ pending_admin_count|default:"0" }}</div>
+                    <div class="stat-label">Pending Admin</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ approved_admin_count|default:"0" }}</div>
+                    <div class="stat-label">Approved Admins</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ verified_count|default:"0" }}</div>
+                    <div class="stat-label">Verified Email</div>
+                </div>
+            </div>
+
+            <!-- Users Table -->
+            <div class="admin-panel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3>All Users</h3>
+                    <div>
+                        <a class="btn btn-primary btn-small" href="{% url 'admin_users_export_csv' %}?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}{% if selected_verification %}verification={{ selected_verification|urlencode }}&{% endif %}{% if selected_status %}status={{ selected_status|urlencode }}{% endif %}">
+                            <i class="fas fa-download"></i> Export CSV
+                        </a>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox"></th>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Verification Level</th>
+                                <th>Admin Status</th>
+                                <th>Account Status</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 10px; white-space: nowrap;">
+                                        <div class="user-avatar">
+                                            {{ user.first_name|first|default:user.username|first|upper }}
+                                        </div>
+                                        <div style="flex: 1; min-width: 150px;">
+                                            <strong style="display: block; white-space: normal; overflow: hidden; text-overflow: ellipsis;">{{ user.get_full_name|default:user.username }}</strong><br>
+                                            <small style="color: var(--gray-color); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@{{ user.username }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ user.email }}</td>
+                                <td>{{ user.phone_number|default:"—" }}</td>
+                                <td>
+                                    {% if user.verification_level == 3 %}
+                                        <span class="status-badge verified">ID Verified</span>
+                                    {% elif user.verification_level == 2 %}
+                                        <span class="status-badge verified">Phone Verified</span>
+                                    {% elif user.verification_level == 1 %}
+                                        <span class="status-badge pending">Email Verified</span>
+                                    {% else %}
+                                        <span class="status-badge unverified">Unverified</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.admin_request_status == 'approved' %}
+                                        <span class="badge badge-success">Admin</span>
+                                    {% elif user.admin_request_status == 'pending' %}
+                                        <span class="badge badge-warning">Pending</span>
+                                    {% elif user.admin_request_status == 'rejected' %}
+                                        <span class="badge badge-danger">Rejected</span>
+                                    {% else %}
+                                        <span class="badge badge-info">Member</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.is_active %}
+                                        <span class="badge badge-success">Active</span>
+                                    {% else %}
+                                        <span class="badge badge-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                                <td>
+                                    <div class="action-menu">
+                                        <button type="button" class="btn-icon js-action-menu-toggle" aria-haspopup="true" aria-expanded="false">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="action-dropdown">
+                                            <a href="{% url 'profile_detail' user.username %}"><i class="fas fa-eye"></i> View Profile</a>
+                                            {% if user.is_active %}
+                                                <form method="post" action="{% url 'admin_user_deactivate' user.id %}" style="display: inline;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" style="background: none; border: none; color: var(--danger-color); cursor: pointer; width: 100%; text-align: left; padding: 0.75rem 1rem;"><i class="fas fa-ban"></i> Deactivate</button>
+                                                </form>
+                                            {% else %}
+                                                <form method="post" action="{% url 'admin_user_activate' user.id %}" style="display: inline;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" style="background: none; border: none; color: var(--success-color); cursor: pointer; width: 100%; text-align: left; padding: 0.75rem 1rem;"><i class="fas fa-check-circle"></i> Activate</button>
+                                                </form>
+                                            {% endif %}
+                                            {% if user.admin_request_status == 'pending' %}
+                                                <a href="{% url 'admin_request_list' %}"><i class="fas fa-check"></i> Review Admin Request</a>
+                                            {% endif %}
+                                            <form method="post" action="{% url 'admin_user_delete' user.id %}" style="display: inline;" id="deleteUserForm{{ user.id }}">
+                                                {% csrf_token %}
+                                                <button type="button" class="deleteUserBtn" style="background: none; border: none; color: var(--danger-color); cursor: pointer; width: 100%; text-align: left; padding: 0.75rem 1rem;" data-user-username="{{ user.username }}" data-form-id="deleteUserForm{{ user.id }}"><i class="fas fa-trash"></i> Delete</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="9" style="text-align: center; padding: 3rem;">
+                                    <i class="fas fa-users" style="font-size: 3rem; color: var(--gray-color); margin-bottom: 1rem;"></i>
+                                    <h3>No Users Found</h3>
+                                    <p style="color: var(--gray-color);">There are no users in the system yet.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    {% if users.has_previous %}
+                    <a class="btn btn-outline" href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}{% if selected_verification %}verification={{ selected_verification|urlencode }}&{% endif %}{% if selected_status %}status={{ selected_status|urlencode }}&{% endif %}page={{ users.previous_page_number }}"><i class="fas fa-chevron-left"></i> Previous</a>
+                    {% else %}
+                    <button class="btn btn-outline" disabled><i class="fas fa-chevron-left"></i> Previous</button>
+                    {% endif %}
+
+                    <span>Page {{ users.number }} of {{ users.paginator.num_pages }}</span>
+
+                    {% if users.has_next %}
+                    <a class="btn btn-outline" href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}{% if selected_verification %}verification={{ selected_verification|urlencode }}&{% endif %}{% if selected_status %}status={{ selected_status|urlencode }}&{% endif %}page={{ users.next_page_number }}">Next <i class="fas fa-chevron-right"></i></a>
+                    {% else %}
+                    <button class="btn btn-outline" disabled>Next <i class="fas fa-chevron-right"></i></button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <a href="{% url 'admin_dashboard' %}" class="logo" style="color: white;">
+                        <i class="fas fa-link"></i> Knot
+                    </a>
+                    <p>Admin Portal - Community Management</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Knot. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/admin.js' %}"></script>
+    <script>
+        // Handle delete user buttons
+        document.querySelectorAll('.deleteUserBtn').forEach((button) => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const username = button.getAttribute('data-user-username');
+                const formId = button.getAttribute('data-form-id');
+                showConfirmModal(
+                    'Delete User',
+                    `Are you sure you want to delete user "${username}"? This action cannot be undone.`,
+                    () => {
+                        document.getElementById(formId).submit();
+                    }
+                );
+            });
+        });
+
+        // Modal Functions
+        function showConfirmModal(title, message, onConfirm) {
+            const modal = document.getElementById('confirmModal');
+            const modalOverlay = document.getElementById('modalOverlay');
+            const modalTitle = modal.querySelector('.modal-title');
+            const modalMessage = modal.querySelector('.modal-message');
+            const confirmBtn = modal.querySelector('.modal-btn-danger');
+            const cancelBtn = modal.querySelector('.modal-btn-cancel');
+
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+
+            const closeModal = () => {
+                modalOverlay.classList.remove('active');
+            };
+
+            confirmBtn.onclick = () => {
+                closeModal();
+                onConfirm();
+            };
+            cancelBtn.onclick = closeModal;
+            modalOverlay.onclick = (e) => {
+                if (e.target === modalOverlay) closeModal();
+            };
+
+            modalOverlay.classList.add('active');
+        }
+    </script>
+
+    <!-- Modal Overlays -->
+    <div id="modalOverlay" class="modal-overlay">
+        <!-- Confirm Modal -->
+        <div id="confirmModal" class="modal-box">
+            <div class="modal-icon danger"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3 class="modal-title">Confirm Action</h3>
+            <p class="modal-message">Are you sure?</p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel">Cancel</button>
+                <button class="modal-btn modal-btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
+    <script src="{% static 'js/admin-dropdown.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const closeAllActionMenus = () => {
+                document.querySelectorAll('.action-menu.open').forEach((menu) => {
+                    menu.classList.remove('open');
+                    const button = menu.querySelector('.js-action-menu-toggle');
+                    if (button) {
+                        button.setAttribute('aria-expanded', 'false');
+                    }
+                });
+            };
+
+            document.querySelectorAll('.js-action-menu-toggle').forEach((button) => {
+                button.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const menu = button.closest('.action-menu');
+                    if (!menu) {
+                        return;
+                    }
+
+                    const isOpen = menu.classList.contains('open');
+                    closeAllActionMenus();
+                    if (!isOpen) {
+                        menu.classList.add('open');
+                        button.setAttribute('aria-expanded', 'true');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.action-dropdown').forEach((dropdown) => {
+                dropdown.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                });
+            });
+
+            document.addEventListener('click', closeAllActionMenus);
+        });
+    </script>
+</body>
+</html>
+
+

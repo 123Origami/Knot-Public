@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Environment variables / secrets
+.env
+
+# Django
+staticfiles/
+
+# PyInstaller build artifacts (knot-launcher desktop build)
+build/
+dist/
+
+# Editor/OS cruft
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+venv/
+.env
+db.sqlite3
+__pycache__/
+media/booking_request_ids/
+media/admin_request_ids/
+media/profile_pics/

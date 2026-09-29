@@ -1,0 +1,33 @@
+/* Admin Dropdown Fix - Using JavaScript Toggle */
+
+/* Reset hover/focus-within behavior */
+.admin-navbar .auth-buttons:hover .admin-dropdown-menu:not(.active),
+.admin-navbar .auth-buttons:focus-within .admin-dropdown-menu:not(.active) {
+    display: none !important;
+}
+
+/* Show dropdown when active class is applied via JavaScript */
+.admin-dropdown-menu.active {
+    display: flex !important;
+}
+
+/* Ensure dropdown can escape overflow clipping */
+.admin-navbar .nav-menu > li.auth-buttons {
+    overflow: visible !important;
+    position: relative;
+    z-index: 1210;
+}
+
+/* Position dropdown absolutely within its container */
+.admin-dropdown-menu {
+    position: absolute !important;
+    top: 100% !important;
+    right: 0 !important;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 200px;
+    margin-top: 0.5rem;
+    z-index: 9999 !important;
+    flex-direction: column;
+}

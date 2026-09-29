@@ -1,0 +1,1062 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Goals - Knot</title>
+    <script src="{% static 'js/theme-bootstrap.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="{% if user.is_authenticated %}{% url 'user_dashboard' %}{% else %}{% url 'index' %}{% endif %}" class="logo">
+                <i class="fas fa-link"></i> Knot
+            </a>
+            <ul class="nav-menu">
+                {% if user.is_authenticated %}
+                    <li><a href="{% url 'user_dashboard' %}">Dashboard</a></li>
+                {% else %}
+                    <li><a href="{% url 'index' %}">Home</a></li>
+                {% endif %}
+                <li><a href="{% url 'browse' %}">Browse Items</a></li>
+                <li><a href="{% url 'suggest' %}">Suggest Item</a></li>
+                <li><a href="{% url 'goals' %}" class="active">Community Goals</a></li>
+                <li class="auth-buttons">
+                    {% if user.is_authenticated %}
+                        <div class="user-dropdown">
+                           {% if user.profile_picture %}
+                           <img src="{{ user.profile_picture.url }}" 
+                               alt="{{ user.username }}" class="user-avatar">
+                           {% else %}
+                            <img src="https://ui-avatars.com/api/?name={{ user.username }}&background=ffebf3&color=2d3748" 
+                                 alt="{{ user.username }}" class="user-avatar">
+                           {% endif %}
+                            <span class="user-name">{{ user.username }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                            <div class="dropdown-menu">
+                                {% if user.is_admin_approved %}
+                                    <a href="{% url 'admin_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</a>
+                                {% else %}
+                                    <a href="{% url 'user_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                                {% endif %}
+                                <a href="{% url 'profile' %}"><i class="fas fa-user"></i> Profile</a>
+                                <div class="dropdown-toggle-row">
+                                    <span><i class="fas fa-moon"></i> Dark Mode</span>
+                                    <label class="switch switch-compact" for="darkModeToggle">
+                                        <input type="checkbox" id="darkModeToggle">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn-login">Login</a>
+                        <a href="{% url 'signup' %}" class="btn-signup">Sign Up</a>
+                    {% endif %}
+                </li>
+            </ul>
+            <button class="hamburger" id="hamburger">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Goals Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1>Community Goals</h1>
+            <p>Join forces with your neighbors to fund shared resources that benefit everyone</p>
+            <div class="header-actions">
+                <a href="{% url 'suggest' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create New Goal
+                </a>
+                <button class="btn btn-outline js-my-contributions">
+                    <i class="fas fa-history"></i> My Contributions
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Goals Filters -->
+    <section class="goals-filters">
+        <div class="container">
+            <div class="filter-tabs" id="filterTabs">
+                <button class="filter-tab active" data-filter="all">All Goals</button>
+                <button class="filter-tab" data-filter="active">Active</button>
+                <button class="filter-tab" data-filter="funded">Funded</button>
+                <button class="filter-tab" data-filter="expired">Expired</button>
+            </div>
+            <div class="search-sort">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search goals..." id="goalSearch">
+                </div>
+                <select class="form-select" id="sortGoals">
+                    <option value="newest">Newest First</option>
+                    <option value="popular">Most Popular</option>
+                    <option value="deadline">Closest Deadline</option>
+                    <option value="progress">Most Funded</option>
+                </select>
+            </div>
+        </div>
+    </section>
+
+    <!-- Goals Grid -->
+    <section class="goals-grid-section">
+        <div class="container">
+            <div class="goals-grid" id="goalsGrid">
+                <!-- Loading spinner -->
+                <div class="loading" id="loadingSpinner">
+                    <div class="spinner"></div>
+                    <p>Loading community goals...</p>
+                </div>
+            </div>
+
+            <!-- Load More -->
+            <div class="load-more" id="loadMoreContainer" style="display: none;">
+                <button class="btn btn-outline" id="loadMoreGoals">
+                    <i class="fas fa-sync-alt"></i> Load More Goals
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Recent Contributions -->
+    <section class="contributions-section">
+        <div class="container">
+            <h2 class="section-title">Recent Contributions</h2>
+            <div class="contributions-list" id="contributionsList">
+                <!-- Contributions will be loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <a href="{% url 'index' %}" class="logo" style="color: white;">
+                        <i class="fas fa-link"></i> Knot
+                    </a>
+                    <p>Tying Communities Together Through Shared Resources</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Create Goal Modal -->
+    <div id="createGoalModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Suggest New Community Goal</h3>
+                <button class="modal-close js-close-modal" data-modal="createGoalModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="goalForm">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label>Goal Title</label>
+                        <input type="text" class="form-input" id="goalTitle" placeholder="What are you raising funds for?" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select class="form-input" id="goalCategory" required>
+                            <option value="">Select Category</option>
+                            <option value="1">Workshop</option>
+                            <option value="2">Technology</option>
+                            <option value="3">Outdoor</option>
+                            <option value="4">Emergency</option>
+                            <option value="5">Education</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Estimated Cost (Ksh)</label>
+                        <input type="number" class="form-input" id="goalCost" min="0.01" step="any" placeholder="5000" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea class="form-textarea" id="goalDescription" rows="4" 
+                                  placeholder="Describe the goal, its benefits, and how it will help the community..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Why should this be a community goal?</label>
+                        <textarea class="form-textarea" id="goalReason" rows="2" 
+                                  placeholder="Explain why this is important for the community..." required></textarea>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline js-close-modal" data-modal="createGoalModal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Submit Suggestion</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contribution Modal -->
+    <div id="contributionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Make a Contribution</h3>
+                <button class="modal-close js-close-modal" data-modal="contributionModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="goal-preview" id="goalPreview"></div>
+                <form id="contributionForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="contributionCampaignId">
+                    <div class="form-group">
+                        <label>Contribution Amount (Ksh)</label>
+                        <div class="amount-options">
+                            <button type="button" class="amount-option" data-amount="1">Ksh 1</button>
+                            <button type="button" class="amount-option" data-amount="50">Ksh 50</button>
+                            <button type="button" class="amount-option" data-amount="100">Ksh 100</button>
+                            <button type="button" class="amount-option" data-amount="500">Ksh 500</button>
+                            <div class="custom-amount">
+                                <input type="number" id="customAmount" class="form-input" 
+                                       placeholder="Other amount" min="1">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number (M-Pesa)</label>
+                        <input type="tel" id="phoneNumber" class="form-input" 
+                               placeholder="0712345678" required>
+                        <small>Enter the phone number registered with M-Pesa</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Optional Message</label>
+                        <textarea id="contributionMessage" class="form-textarea" 
+                                  placeholder="Add a message to show with your contribution..." rows="2"></textarea>
+                    </div>
+                    <div class="contribution-summary">
+                        <div class="summary-item">
+                            <span>Contribution Amount</span>
+                            <span id="summaryAmount">Ksh 0.00</span>
+                        </div>
+                        <div class="summary-item total">
+                            <span>Total to Pay</span>
+                            <span id="summaryTotal">Ksh 0.00</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block" id="contributeBtn">
+                        <i class="fas fa-lock"></i> Pay with M-Pesa
+                    </button>
+                    <p class="security-note">
+                        <i class="fas fa-shield-alt"></i>
+                        Your payment is secure and encrypted via PayHero
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- My Contributions Modal -->
+    <div id="myContributionsModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>My Contributions</h3>
+                <button class="modal-close js-close-modal" data-modal="myContributionsModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="myContributionsList" style="max-height: 500px; overflow-y: auto;">
+                    <!-- Contributions will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'js/app.js' %}"></script>
+    <script>
+        window.PAYMENTS_ENABLED = {{ payments_enabled|yesno:"true,false" }};
+
+        let currentPage = 1;
+        let isLoading = false;
+        let currentFilter = 'all';
+        let currentSort = 'newest';
+        let currentSearch = '';
+
+        // Load goals on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadGoals();
+            loadRecentContributions();
+            
+            // Modal event listeners
+            document.querySelectorAll('.js-my-contributions').forEach(btn => {
+                btn.addEventListener('click', showMyContributions);
+            });
+            
+            document.querySelectorAll('.js-close-modal').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const modalId = this.getAttribute('data-modal');
+                    hideModal(modalId);
+                });
+            });
+            
+            // Event delegation for dynamically created buttons
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.js-contribute-goal')) {
+                    if (!window.PAYMENTS_ENABLED) {
+                        showNotification('Payments are disabled on this demo deployment.', 'warning');
+                        return;
+                    }
+                    const btn = e.target.closest('.js-contribute-goal');
+                    const campaignId = btn.getAttribute('data-campaign-id');
+                    const campaignTitle = btn.getAttribute('data-campaign-title');
+                    const campaignTarget = btn.getAttribute('data-campaign-target');
+                    showContributionModal(campaignId, campaignTitle, campaignTarget);
+                }
+                if (e.target.closest('.js-goal-details')) {
+                    const btn = e.target.closest('.js-goal-details');
+                    const campaignId = btn.getAttribute('data-campaign-id');
+                    viewGoalDetails(campaignId);
+                }
+            });
+            
+            // Setup event listeners
+            document.getElementById('goalSearch').addEventListener('input', function() {
+                currentSearch = this.value;
+                currentPage = 1;
+                loadGoals();
+            });
+            
+            document.getElementById('sortGoals').addEventListener('change', function() {
+                currentSort = this.value;
+                currentPage = 1;
+                loadGoals();
+            });
+            
+            document.getElementById('loadMoreGoals').addEventListener('click', function() {
+                currentPage++;
+                loadGoals();
+            });
+            
+            // Filter tabs
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    currentFilter = this.getAttribute('data-filter');
+                    currentPage = 1;
+                    loadGoals();
+                });
+            });
+            
+            // Contribution amount selection
+            const amountOptions = document.querySelectorAll('.amount-option');
+            const customAmount = document.getElementById('customAmount');
+            const summaryAmount = document.getElementById('summaryAmount');
+            const summaryTotal = document.getElementById('summaryTotal');
+            
+            function updateContributionSummary(amount) {
+                summaryAmount.textContent = `Ksh ${amount.toFixed(2)}`;
+                summaryTotal.textContent = `Ksh ${amount.toFixed(2)}`;
+            }
+            
+            amountOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    amountOptions.forEach(o => o.classList.remove('active'));
+                    this.classList.add('active');
+                    customAmount.value = '';
+                    updateContributionSummary(parseFloat(this.getAttribute('data-amount')));
+                });
+            });
+            
+            customAmount.addEventListener('input', function() {
+                amountOptions.forEach(o => o.classList.remove('active'));
+                if (this.value) {
+                    updateContributionSummary(parseFloat(this.value));
+                }
+            });
+            
+            // Form submissions
+            document.getElementById('goalForm').addEventListener('submit', submitGoalSuggestion);
+            document.getElementById('contributionForm').addEventListener('submit', submitContribution);
+        });
+        
+        async function loadGoals() {
+    if (isLoading) return;
+    isLoading = true;
+    
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    if (loadingSpinner) {
+        loadingSpinner.style.display = 'flex';
+    }
+    
+    try {
+        let url = `/api/campaigns/campaigns/?page=${currentPage}&sort=${currentSort}&search=${encodeURIComponent(currentSearch)}`;
+        if (currentFilter !== 'all') {
+            url += `&status=${currentFilter}`;
+        }
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        const goalsGrid = document.getElementById('goalsGrid');
+        if (goalsGrid) {
+            if (currentPage === 1) {
+                goalsGrid.innerHTML = '';
+            }
+            
+            if (data.results && data.results.length > 0) {
+                data.results.forEach(campaign => {
+                    addGoalCard(campaign);
+                });
+                const loadMoreContainer = document.getElementById('loadMoreContainer');
+                if (loadMoreContainer) {
+                    loadMoreContainer.style.display = data.next ? 'block' : 'none';
+                }
+            } else if (currentPage === 1 && goalsGrid) {
+                let emptyMessage = '';
+                let emptyIcon = 'fa-bullhorn';
+                let emptyTitle = 'No goals found';
+                let emptyText = 'Be the first to suggest a community goal!';
+                let showButton = true;
+
+                if (currentFilter === 'expired') {
+                    emptyIcon = 'fa-history';
+                    emptyTitle = 'No expired goals';
+                    emptyText = 'All goals are still active or have been funded!';
+                    showButton = false;
+                } else if (currentFilter === 'active') {
+                    emptyIcon = 'fa-bullhorn';
+                    emptyTitle = 'No active goals';
+                    emptyText = 'Be the first to suggest a community goal!';
+                    showButton = true;
+                } else if (currentFilter === 'funded') {
+                    emptyIcon = 'fa-check-circle';
+                    emptyTitle = 'No funded goals yet';
+                    emptyText = 'Support active goals to get them funded!';
+                    showButton = false;
+                }
+
+                emptyMessage = `
+                    <div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+                        <i class="fas ${emptyIcon}" style="font-size: 3rem; color: var(--gray-color);"></i>
+                        <h3>${emptyTitle}</h3>
+                        <p>${emptyText}</p>
+                        ${showButton ? `<a href="{% url 'suggest' %}" class="btn btn-primary">Suggest a Goal</a>` : ''}
+                    </div>
+                `;
+                goalsGrid.innerHTML = emptyMessage;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading goals:', error);
+        showNotification('Failed to load goals', 'error');
+    } finally {
+        if (loadingSpinner) {
+            loadingSpinner.style.display = 'none';
+        }
+        isLoading = false;
+    }
+}
+        
+        function addGoalCard(campaign) {
+            const progress = campaign.progress_percentage || 0;
+            const statusClass = campaign.status === 'active' ? 'active' : (campaign.status === 'funded' ? 'funded' : (campaign.status === 'completed' ? 'funded' : ''));
+            const statusText = campaign.status === 'active'
+                ? 'Active'
+                : (campaign.status === 'funded'
+                    ? 'Funded'
+                    : (campaign.status === 'completed' ? 'Completed' : 'Expired'));
+            const statusBadgeClass = campaign.status === 'active'
+                ? 'badge-success'
+                : (campaign.status === 'funded' || campaign.status === 'completed' ? 'badge-info' : 'badge-danger');
+            
+            const card = document.createElement('div');
+            card.className = `goal-card ${statusClass}`;
+            card.innerHTML = `
+                ${campaign.image_url ? `<div class="goal-image"><img src="${escapeHtml(campaign.image_url)}" alt="${escapeHtml(campaign.title)}" style="width:100%; height:180px; object-fit:cover; border-radius:12px 12px 0 0;"></div>` : ''}
+                <div class="goal-header">
+                    <div class="goal-category">${campaign.category_name || 'General'}</div>
+                    <div class="goal-status">
+                        <span class="badge ${statusBadgeClass}">${statusText}</span>
+                    </div>
+                </div>
+                <div class="goal-content">
+                    <h3>${escapeHtml(campaign.title)}</h3>
+                    <p class="goal-description">${escapeHtml(campaign.description.substring(0, 120))}...</p>
+                    <div class="goal-progress">
+                        <div class="progress-info">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progress}%"></div>
+                            </div>
+                            <div class="progress-numbers">
+                                <span class="raised">Ksh ${formatNumber(campaign.funds_raised)} raised</span>
+                                <span class="target">of Ksh ${formatNumber(campaign.target_amount)} goal</span>
+                            </div>
+                        </div>
+                        <div class="progress-percentage">${progress}%</div>
+                    </div>
+                    <div class="goal-meta">
+                        <div class="meta-item">
+                            <i class="fas fa-clock"></i>
+                            <span>Started ${new Date(campaign.created_at).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="goal-actions">
+                    ${campaign.status !== 'active' ?
+                        `<button class="btn btn-success" disabled><i class="fas fa-check"></i> Goal Achieved!</button>` :
+                        window.PAYMENTS_ENABLED ?
+                        `<button class="btn btn-primary js-contribute-goal" data-campaign-id="${campaign.id}" data-campaign-title="${escapeHtml(campaign.title)}" data-campaign-target="${campaign.target_amount}">
+                            <i class="fas fa-hand-holding-heart"></i> Contribute
+                        </button>` :
+                        `<button class="btn btn-primary" disabled title="Payments are disabled on this demo deployment">
+                            <i class="fas fa-hand-holding-heart"></i> Contribute <span class="badge badge-light" style="margin-left:0.35rem;">Demo Mode</span>
+                        </button>`
+                    }
+                    <button class="btn btn-outline js-goal-details" data-campaign-id="${campaign.id}">
+                        <i class="fas fa-info-circle"></i> Details
+                    </button>
+                </div>
+            `;
+            document.getElementById('goalsGrid').appendChild(card);
+        }
+        
+        async function loadRecentContributions() {
+            try {
+                const response = await fetch('/api/campaigns/campaigns/recent/');
+                if (!response.ok) {
+                    throw new Error('Failed to load recent contributions');
+                }
+                const contributionsPayload = await response.json();
+                const recentContributions = Array.isArray(contributionsPayload)
+                    ? contributionsPayload
+                    : (contributionsPayload.results || []);
+                let myRows = [];
+
+                try {
+                    const myResponse = await fetch('/api/campaigns/contributions/my/', {
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken')
+                        }
+                    });
+
+                    if (myResponse.ok) {
+                        const myData = await myResponse.json();
+                        const myList = Array.isArray(myData) ? myData : (myData.results || []);
+                        // Show all contributions, most recent first
+                        myRows = myList.slice(0, 5);
+                    }
+                } catch (myErr) {
+                    console.warn('Could not load user contribution statuses:', myErr);
+                }
+                
+                const container = document.getElementById('contributionsList');
+                container.innerHTML = '';
+
+                myRows.forEach(contrib => {
+                    const status = (contrib.status || 'pending').toLowerCase();
+                    let statusColor, statusLabel;
+                    if (status === 'completed') {
+                        statusColor = '#16a34a';
+                        statusLabel = 'Completed';
+                    } else if (status === 'failed' || status === 'cancelled') {
+                        statusColor = '#dc2626';
+                        statusLabel = status === 'failed' ? 'Failed' : 'Cancelled';
+                    } else {
+                        statusColor = '#d97706';
+                        statusLabel = 'Pending Confirmation';
+                    }
+
+                    const div = document.createElement('div');
+                    div.className = 'contribution-item';
+                    div.innerHTML = `
+                        <div class="contributor-info">
+                            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent('{{ user.username|escapejs }}')}&background=ffebf3&color=2d3748"
+                                 alt="{{ user.username|escapejs }}" class="contributor-avatar">
+                            <div>
+                                <h4>{{ user.username|escapejs }}</h4>
+                                <small>${new Date(contrib.created_at).toLocaleDateString()}</small>
+                            </div>
+                        </div>
+                        <div class="contribution-details">
+                            <span class="contribution-amount">Ksh ${formatNumber(contrib.amount)}</span>
+                            <span class="contribution-goal">to ${escapeHtml(contrib.campaign_title || 'Community Goal')}</span>
+                            <span style="display:block; margin-top:0.25rem; color:${statusColor}; font-size:0.8rem; font-weight:600;">${statusLabel}</span>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+                
+                // Filter to show only successful/completed contributions
+                const successfulContributions = recentContributions.filter(contrib => 
+                    (contrib.status || '').toLowerCase() === 'completed'
+                );
+
+                if (successfulContributions.length > 0) {
+                    successfulContributions.slice(0, 5).forEach(contrib => {
+                        const displayName = escapeHtml(contrib.user_name || 'Community Member');
+                        const campaignTitle = escapeHtml(contrib.campaign_title || 'Community Goal');
+                        const div = document.createElement('div');
+                        div.className = 'contribution-item';
+                        div.innerHTML = `
+                            <div class="contributor-info">
+                                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(contrib.user_name || 'Community Member')}&background=ffebf3&color=2d3748" 
+                                     alt="${displayName}" class="contributor-avatar">
+                                <div>
+                                    <h4>${displayName}</h4>
+                                    <small>${new Date(contrib.created_at).toLocaleDateString()}</small>
+                                </div>
+                            </div>
+                            <div class="contribution-details">
+                                <span class="contribution-amount">Ksh ${formatNumber(contrib.amount)}</span>
+                                <span class="contribution-goal">to ${campaignTitle}</span>
+                            </div>
+                        `;
+                        container.appendChild(div);
+                    });
+                } else if (myRows.length === 0) {
+                    container.innerHTML = '<p class="text-muted">No contributions yet. Be the first to contribute!</p>';
+                }
+            } catch (error) {
+                console.error('Error loading contributions:', error);
+                const container = document.getElementById('contributionsList');
+                if (container) {
+                    container.innerHTML = '<p class="text-muted">Unable to load recent contributions right now.</p>';
+                }
+            }
+        }
+        
+        async function submitGoalSuggestion(e) {
+            e.preventDefault();
+
+            const estimatedCostInput = document.getElementById('goalCost').value;
+            const estimatedCost = parseFloat(estimatedCostInput);
+            if (!estimatedCostInput || Number.isNaN(estimatedCost) || estimatedCost <= 0) {
+                showNotification('Estimated cost must be greater than Ksh 0.', 'error');
+                return;
+            }
+            
+            const data = {
+                name: document.getElementById('goalTitle').value,
+                description: document.getElementById('goalDescription').value,
+                estimated_cost: estimatedCost,
+                category: document.getElementById('goalCategory').value,
+                reason: document.getElementById('goalReason').value
+            };
+            
+            try {
+                const response = await fetch('/api/campaigns/suggest/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    showNotification('Goal suggestion submitted for review!', 'success');
+                    hideModal('createGoalModal');
+                    document.getElementById('goalForm').reset();
+                } else {
+                    const error = await response.json();
+                    showNotification(error.error || 'Failed to submit suggestion', 'error');
+                }
+            } catch (error) {
+                console.error('Error submitting suggestion:', error);
+                showNotification('Failed to submit suggestion', 'error');
+            }
+        }
+        
+        async function submitContribution(e) {
+    e.preventDefault();
+    
+    const campaignId = document.getElementById('contributionCampaignId').value;
+    const amount = document.getElementById('customAmount').value || 
+                  document.querySelector('.amount-option.active')?.getAttribute('data-amount');
+    const phoneNumber = document.getElementById('phoneNumber').value;
+    
+    const numAmount = parseFloat(amount);
+    
+    if (!amount || isNaN(numAmount) || numAmount < 1) {
+        showNotification('Minimum contribution is Ksh 1', 'error');
+        return;
+    }
+    
+    if (!phoneNumber) {
+        showNotification('Please enter your M-Pesa phone number', 'error');
+        return;
+    }
+    
+    const btn = document.getElementById('contributeBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending STK Push...';
+    
+    try {
+        const response = await fetch(`/api/campaigns/campaigns/${campaignId}/contribute/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                amount: numAmount,
+                phone_number: phoneNumber,
+                is_anonymous: false,
+                message: document.getElementById('contributionMessage').value
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Show waiting message
+            showNotification('STK Push sent to your phone. Please enter your PIN.', 'info');
+
+            const goalTitle = document.querySelector('#goalPreview h4')?.textContent || 'Community Goal';
+            prependPendingContribution({
+                user_name: '{{ user.username|escapejs }}',
+                amount: numAmount,
+                campaign_title: goalTitle,
+                is_anonymous: false,
+                created_at: new Date().toISOString(),
+                status: 'pending'
+            });
+
+            hideModal('contributionModal');
+            
+            // Start polling for payment status with campaign ID for targeted refresh
+            startPolling(data.external_reference, campaignId);
+            
+        } else {
+            showNotification(data.error || 'Payment initiation failed', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-lock"></i> Pay with M-Pesa';
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Failed to initiate payment', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-lock"></i> Pay with M-Pesa';
+    }
+}
+
+let pollingInterval = null;
+
+function prependPendingContribution(contrib) {
+    const container = document.getElementById('contributionsList');
+    if (!container) return;
+
+    const emptyState = container.querySelector('.text-muted');
+    if (emptyState) {
+        emptyState.remove();
+    }
+
+    const div = document.createElement('div');
+    div.className = 'contribution-item';
+    div.innerHTML = `
+        <div class="contributor-info">
+            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(contrib.user_name || 'You')}&background=ffebf3&color=2d3748"
+                 alt="${escapeHtml(contrib.user_name || 'You')}" class="contributor-avatar">
+            <div>
+                <h4>${escapeHtml(contrib.user_name || 'You')}</h4>
+                <small>${new Date(contrib.created_at).toLocaleDateString()}</small>
+            </div>
+        </div>
+        <div class="contribution-details">
+            <span class="contribution-amount">Ksh ${formatNumber(contrib.amount || 0)}</span>
+            <span class="contribution-goal">to ${escapeHtml(contrib.campaign_title || 'Community Goal')}</span>
+            <span style="display:block; margin-top:0.25rem; color:#d97706; font-size:0.8rem; font-weight:600;">Pending Confirmation</span>
+        </div>
+    `;
+
+    container.prepend(div);
+}
+
+function startPolling(reference, campaignId) {
+    let attempts = 0;
+    const maxAttempts = 36; // 3 minutes (5 seconds * 36)
+    
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+    }
+    
+    pollingInterval = setInterval(async () => {
+        attempts++;
+        
+        try {
+            const response = await fetch(`/api/campaigns/check-payment-status/?reference=${encodeURIComponent(reference)}`);
+            let data = {};
+
+            try {
+                data = await response.json();
+            } catch (jsonError) {
+                const fallbackMessage = response.status >= 500
+                    ? 'Server error while checking payment status.'
+                    : 'Unexpected response while checking payment status.';
+                throw new Error(fallbackMessage);
+            }
+
+            if (!response.ok) {
+                const errorMessage = data.error || data.message || `Status check failed (${response.status})`;
+                throw new Error(errorMessage);
+            }
+            
+            if (data.status === 'completed') {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+                showNotification('Payment successful! Thank you for your contribution.', 'success');
+                
+                // Immediately refresh just this campaign's card to show updated percentage
+                if (campaignId) {
+                    await refreshCampaignCard(campaignId);
+                }
+                
+                // Then do a full refresh for stats and other campaign data
+                setTimeout(() => {
+                    loadGoals();
+                    loadStats();
+                    loadRecentContributions();
+                    showMyContributions();
+                }, 500);
+                
+            } else if (data.status === 'failed' || data.status === 'cancelled') {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+                showNotification('Payment failed. Please try again.', 'error');
+            }
+            
+            if (attempts >= maxAttempts) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+                showNotification('Payment still processing. Refresh this page in a few moments to see updates.', 'warning');
+            }
+            
+        } catch (error) {
+            console.error('Polling error:', error);
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+            showNotification(error.message || 'Could not fetch payment status. Please try again shortly.', 'error');
+        }
+        
+    }, 5000); // Check every 5 seconds
+}
+
+async function refreshCampaignCard(campaignId) {
+    try {
+        const response = await fetch(`/api/campaigns/campaigns/${campaignId}/detail/`);
+        if (!response.ok) {
+            console.error('Failed to refresh campaign');
+            return;
+        }
+        
+        const campaign = await response.json();
+        
+        // Find the card for this campaign and update its content
+        const goalCards = document.querySelectorAll('.goal-card');
+        for (let card of goalCards) {
+            const button = card.querySelector(`[data-campaign-id="${campaignId}"]`);
+            if (button) {
+                // Update the progress bar
+                const progressFill = card.querySelector('.progress-fill');
+                const progressPercentage = card.querySelector('.progress-percentage');
+                const raisedAmount = card.querySelector('.progress-numbers .raised');
+                const targetAmount = card.querySelector('.progress-numbers .target');
+                
+                if (progressFill) {
+                    progressFill.style.width = campaign.progress_percentage + '%';
+                }
+                if (progressPercentage) {
+                    progressPercentage.textContent = campaign.progress_percentage + '%';
+                }
+                if (raisedAmount) {
+                    raisedAmount.textContent = `Ksh ${formatNumber(campaign.funds_raised)} raised`;
+                }
+                if (targetAmount) {
+                    targetAmount.textContent = `of Ksh ${formatNumber(campaign.target_amount)} goal`;
+                }
+                
+                // Update contributor count if present
+                const contributorMeta = card.querySelector('.meta-item:first-child');
+                if (contributorMeta) {
+                    contributorMeta.innerHTML = `<i class="fas fa-users"></i><span>${campaign.contributor_count} contributors</span>`;
+                }
+                
+                break;
+            }
+        }
+    } catch (error) {
+        console.error('Error refreshing campaign card:', error);
+    }
+}
+        
+        async function showMyContributions() {
+    try {
+        const response = await fetch('/api/campaigns/contributions/my/', {
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load contributions');
+        }
+        
+        const data = await response.json();
+        
+        const container = document.getElementById('myContributionsList');
+        
+        if (!container) {
+            console.error('Container myContributionsList not found');
+            return;
+        }
+        
+        container.innerHTML = '';
+        
+        // Handle the data - it might be an array or have a results property
+        let contributions = data;
+        if (data.results) {
+            contributions = data.results;
+        }
+        
+        if (contributions && contributions.length > 0) {
+            contributions.forEach(contrib => {
+                const status = (contrib.status || 'completed').toLowerCase();
+                const statusColor = status === 'completed'
+                    ? '#16a34a'
+                    : ((status === 'failed' || status === 'cancelled') ? '#dc2626' : '#d97706');
+                const div = document.createElement('div');
+                div.className = 'contribution-item';
+                div.style.padding = '15px';
+                div.style.borderBottom = '1px solid #eee';
+                div.innerHTML = `
+                    <div>
+                        <strong>${escapeHtml(contrib.campaign_title || contrib.campaign)}</strong>
+                        <div>Ksh ${formatNumber(contrib.amount)}</div>
+                        <small>${new Date(contrib.created_at).toLocaleDateString()}</small>
+                        <div style="font-size: 0.85rem; font-weight: 600; color: ${statusColor}; text-transform: capitalize;">${status}</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        } else {
+            container.innerHTML = '<p style="padding: 20px; text-align: center;">You haven\'t made any contributions yet.</p>';
+        }
+        
+        // Show modal
+        const modal = document.getElementById('myContributionsModal');
+        
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.add('active');
+        } else {
+            console.error('Modal element myContributionsModal not found');
+        }
+        
+    } catch (error) {
+        console.error('Error loading contributions:', error);
+        showNotification('Failed to load your contributions', 'error');
+    }
+}
+
+        
+        function showContributionModal(campaignId, title, target) {
+            document.getElementById('contributionCampaignId').value = campaignId;
+            document.getElementById('goalPreview').innerHTML = `
+                <h4>${escapeHtml(title)}</h4>
+                <p>Goal: Ksh ${formatNumber(target)}</p>
+            `;
+            showModal('contributionModal');
+        }
+        
+        function viewGoalDetails(campaignId) {
+            window.location.href = `/campaigns/${campaignId}/`;
+        }
+        
+        // Utility functions
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+        
+        function hideModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
+}
+        
+        function showCreateGoalModal() {
+            showModal('createGoalModal');
+        }
+        
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        function showNotification(message, type) {
+            const existing = document.querySelector('.goal-toast');
+            if (existing) {
+                existing.remove();
+            }
+
+            const toast = document.createElement('div');
+            toast.className = 'goal-toast';
+            const color = type === 'success'
+                ? '#166534'
+                : type === 'error'
+                    ? '#991b1b'
+                    : type === 'warning'
+                        ? '#92400e'
+                        : '#1e3a8a';
+            const bg = type === 'success'
+                ? '#dcfce7'
+                : type === 'error'
+                    ? '#fee2e2'
+                    : type === 'warning'
+                        ? '#fef3c7'
+                        : '#dbeafe';
+
+            toast.style.position = 'fixed';
+            toast.style.right = '20px';
+            toast.style.bottom = '20px';
+            toast.style.zIndex = '9999';
+            toast.style.maxWidth = '320px';
+            toast.style.padding = '0.85rem 1rem';
+            toast.style.borderRadius = '8px';
+            toast.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)';
+            toast.style.backgroundColor = bg;
+            toast.style.color = color;
+            toast.style.fontWeight = '600';
+            toast.textContent = message;
+
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+    </script>
+</body>
+</html>

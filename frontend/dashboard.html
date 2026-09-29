@@ -1,0 +1,2007 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Knot</title>
+    <script src="{% static 'js/theme-bootstrap.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .notification-row.is-unread {
+            background-color: var(--primary-color);
+        }
+        /* Custom Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.95);
+            }
+            to { 
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        .modal-box {
+            position: relative;
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease-out;
+        }
+        .modal-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        .modal-icon.info {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+        }
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #1f2937;
+        }
+        .modal-message {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        .modal-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            font-family: inherit;
+        }
+        .modal-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .modal-input-hint {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-top: -0.75rem;
+            margin-bottom: 1rem;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+        .modal-btn {
+            padding: 0.625rem 1.25rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+        }
+        .modal-btn-cancel {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        .modal-btn-cancel:hover {
+            background: #e5e7eb;
+        }
+        .modal-btn-confirm {
+            background: var(--primary-color);
+            color: white;
+        }
+        .modal-btn-confirm:hover {
+            background: var(--primary-dark);
+        }
+        .pickup-chat-thread {
+            border: 1px solid var(--light-gray);
+            border-radius: 12px;
+            padding: 1rem;
+            max-height: 320px;
+            overflow-y: auto;
+            background: linear-gradient(180deg, #fffafc 0%, #f8fafc 100%);
+        }
+        .pickup-chat-empty {
+            color: var(--gray-color);
+            text-align: center;
+            padding: 1.25rem 1rem;
+        }
+        .pickup-chat-message {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.65rem;
+            margin-bottom: 0.75rem;
+        }
+        .pickup-chat-message.is-mine {
+            justify-content: flex-end;
+        }
+        .pickup-chat-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 700;
+            box-shadow: 0 4px 10px rgba(45, 55, 72, 0.12);
+        }
+        .pickup-chat-bubble {
+            max-width: 82%;
+            padding: 0.7rem 0.85rem;
+            border-radius: 14px;
+            border: 1px solid transparent;
+            box-shadow: 0 6px 16px rgba(45, 55, 72, 0.06);
+        }
+        .pickup-chat-message:not(.is-mine) .pickup-chat-bubble {
+            background: #ffffff;
+            border-color: #e2e8f0;
+        }
+        .pickup-chat-message.is-mine .pickup-chat-bubble {
+            background: rgba(255, 235, 243, 0.9);
+            border-color: rgba(248, 208, 224, 0.95);
+        }
+        .pickup-chat-sender {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin-bottom: 0.2rem;
+        }
+        .pickup-chat-content {
+            white-space: pre-wrap;
+            line-height: 1.5;
+            color: var(--dark-color);
+        }
+        .pickup-chat-meta {
+            font-size: 0.75rem;
+            color: var(--gray-color);
+            margin-top: 0.35rem;
+        }
+        .pickup-chat-footer {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            padding-top: 0.25rem;
+            margin-bottom: 0.5rem;
+            box-sizing: border-box;
+        }
+        .pickup-chat-footer .btn {
+            flex: 1 1 160px;
+            min-width: 140px;
+            max-width: 100%;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.25rem;
+        }
+        .section-header h2,
+        .section-header h3 {
+            margin: 0;
+        }
+        .section-header .btn {
+            flex-shrink: 0;
+        }
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+        .action-card {
+            min-height: 96px;
+            align-items: flex-start;
+            gap: 0.85rem;
+            padding: 1.25rem 1.5rem;
+            line-height: 1.35;
+        }
+        .action-card span {
+            display: block;
+        }
+        .table-pagination {
+            flex-wrap: wrap;
+        }
+        .table-pagination > div {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .table-pagination .btn {
+            min-width: 92px;
+        }
+        /* 1. Ensure the table behaves like a real table */
+.paginated-table {
+    display: table !important;
+    table-layout: auto !important; /* Allow columns to adjust based on content */
+    width: 100% !important;
+    border-collapse: collapse;
+}
+
+/* 2. Fix the Overlap for all columns */
+.paginated-table th,
+.paginated-table td {
+    /* Allow text to wrap to a new line (The 'Word' behavior) */
+    white-space: normal !important; 
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    
+    /* CRITICAL: This 'min-width' stops columns from crashing into each other.
+       If they run out of space, the table will expand rather than overlap. */
+    min-width: 110px !important; 
+    
+    padding: 12px 10px !important;
+    vertical-align: top;
+    line-height: 1.4;
+}
+
+/* 3. Give the first column (Item Name) more 'weight' */
+.paginated-table td:first-child {
+    min-width: 180px !important;
+    font-weight: 600;
+}
+
+/* 4. Keep small data (like Status or ID) from being too wide */
+.paginated-table td:nth-child(3),
+.paginated-table td:nth-child(5) {
+    min-width: 80px !important;
+}
+
+/* 5. The Container Safety Net */
+/* If 7 columns @ 110px each = 770px, but your screen is only 600px, 
+   this DIV ensures the table scrolls instead of squishing and overlapping. */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto; /* Horizontal scroll as a last resort */
+    -webkit-overflow-scrolling: touch;
+}
+</style>
+</head>
+<body>
+    {% csrf_token %}
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="{% if user.is_authenticated %}{% url 'user_dashboard' %}{% else %}{% url 'index' %}{% endif %}" class="logo">
+                <i class="fas fa-link"></i> Knot
+            </a>
+            <ul class="nav-menu">
+                <li><a href="{% url 'user_dashboard' %}" class="active">Dashboard</a></li>
+                <li><a href="{% url 'browse' %}">Browse Items</a></li>
+                <li><a href="{% url 'suggest' %}">Suggest Item</a></li>
+                <li><a href="{% url 'goals' %}">Community Goals</a></li>
+                <li class="user-menu">
+                    <div class="user-dropdown">
+                        {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" alt="User" class="user-avatar">
+                        {% else %}
+                        <img src="https://ui-avatars.com/api/?name={{ user.first_name|default:user.username }}&background=ffebf3&color=2d3748" 
+                            alt="User" class="user-avatar">
+                        {% endif %}
+                        <span class="user-name">{{ user.first_name|default:user.username }}</span>
+                        <i class="fas fa-chevron-down"></i>
+                        <div class="dropdown-menu">
+                            <!-- FIXED: Changed from 'dashboard' to 'user_dashboard' -->
+                            <a href="{% url 'user_dashboard' %}" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                            <a href="{% url 'profile' %}"><i class="fas fa-user"></i> Profile</a>
+            
+                            <div class="dropdown-toggle-row">
+                                <span><i class="fas fa-moon"></i> Dark Mode</span>
+                                <label class="switch switch-compact" for="darkModeToggle">
+                                    <input type="checkbox" id="darkModeToggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <a href="{% url 'logout' %}" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+            <button class="hamburger" id="hamburger">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Dashboard -->
+    <section class="dashboard">
+        <div class="container">
+            {% if messages %}
+            <div style="margin-bottom: 1rem;">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}" style="margin-bottom: 0.6rem;">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="dashboard-grid">
+                <!-- Sidebar -->
+                <aside class="sidebar">
+                    <div class="user-profile">
+                        {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}" class="profile-avatar">
+                        {% else %}
+                        <img src="https://ui-avatars.com/api/?name={{ user.first_name|default:user.username }}&background=ffebf3&color=2d3748" 
+                            alt="{{ user.username }}" class="profile-avatar">
+                        {% endif %}
+                        <h3>{{ user.get_full_name|default:user.username }}</h3>
+                        <p class="user-role">
+                            {% if user.is_admin_approved %}
+                                <span class="badge badge-info">Admin</span>
+                            {% else %}
+                                <span class="badge badge-success">Member</span>
+                            {% endif %}
+                        </p>
+                        <p class="user-join">Member since {{ user.date_joined|date:"F Y" }}</p>
+                    </div>
+                    
+                    <ul class="sidebar-menu">
+                        <li><a href="#overview" class="active"><i class="fas fa-tachometer-alt"></i> Overview</a></li>
+                        <li><a href="#bookings"><i class="fas fa-calendar-check"></i> My Bookings</a></li>
+                        <li><a href="#items"><i class="fas fa-tools"></i> My Borrowed Items</a></li>
+                        <li><a href="#suggestions"><i class="fas fa-lightbulb"></i> My Suggestions</a></li>
+                        <li><a href="#contributions"><i class="fas fa-hand-holding-heart"></i> My Contributions</a></li>
+                        <li><a href="#messages"><i class="fas fa-bell"></i> Notifications</a></li>
+                        <li><a href="#settings"><i class="fas fa-cog"></i> Settings</a></li>
+                    </ul>
+                    
+                    <!-- Admin quick link for admins -->
+                    {% if user.is_admin_approved %}
+                    <div style="margin-top: 1rem; padding: 1rem; border-top: 1px solid var(--light-gray);">
+                        <a href="{% url 'admin_dashboard' %}" class="btn btn-primary btn-block">
+                            <i class="fas fa-user-shield"></i> Go to Admin Panel
+                        </a>
+                    </div>
+                    {% endif %}
+                </aside>
+
+                <!-- Main Content -->
+                <main class="main-content">
+                    <!-- Stats Overview -->
+                    <section id="overview" class="dashboard-section">
+                        <div class="section-header">
+                            <h2>Dashboard Overview</h2>
+                            <a href="{% url 'browse' %}" class="btn btn-primary">Browse Items</a>
+                        </div>
+
+                        {% if user.admin_request_status == 'pending' %}
+                        <div class="card" style="border-left: 4px solid var(--secondary-color); margin-bottom: 1.5rem; background: rgba(90, 103, 216, 0.06);">
+                            <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+                                <h3 style="color: var(--secondary-color); margin: 0;">
+                                    <i class="fas fa-user-clock"></i>
+                                    Admin Request Pending Approval
+                                </h3>
+                            </div>
+                            <p style="margin: 0.55rem 0 0; color: var(--gray-color);">
+                                Your community admin request has been submitted and is waiting for approval from an existing admin. You can keep using your member dashboard while your request is being reviewed.
+                            </p>
+                        </div>
+                        {% elif user.admin_request_status == 'rejected' %}
+                        <div class="card" style="border-left: 4px solid var(--danger-color); margin-bottom: 1.5rem; background: rgba(245, 101, 101, 0.06);">
+                            <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+                                <h3 style="color: var(--danger-color); margin: 0;">
+                                    <i class="fas fa-user-times"></i>
+                                    Admin Request Not Approved
+                                </h3>
+                            </div>
+                            <p style="margin: 0.55rem 0 0; color: var(--gray-color);">
+                                Your latest admin request was not approved. You can continue using your member dashboard.
+                            </p>
+                        </div>
+                        {% endif %}
+
+                        {% if overdue_blocking_count %}
+                        <div class="card" style="border-left: 4px solid var(--danger-color); margin-bottom: 1.5rem;">
+                            <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+                                <h3 style="color: var(--danger-color); margin: 0;">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Booking Locked: {{ overdue_blocking_count }} Overdue Item{{ overdue_blocking_count|pluralize }}
+                                </h3>
+                                <a href="#bookings" class="btn btn-outline btn-small">Review My Bookings</a>
+                            </div>
+                            <p style="margin: 0.4rem 0 0.9rem; color: var(--gray-color);">
+                                You cannot request new bookings until these overdue item{{ overdue_blocking_count|pluralize }} {{ overdue_blocking_count|pluralize:'is,are' }} returned.
+                            </p>
+                            <div style="display: grid; gap: 0.65rem;">
+                                {% for overdue_booking in overdue_blocking_bookings %}
+                                <div style="padding: 0.65rem 0.85rem; border: 1px solid #fed7d7; background: #fff5f5; border-radius: 8px;">
+                                    <strong>{{ overdue_booking.item.name }}</strong>
+                                    <span style="color: var(--gray-color);"> • Due {{ overdue_booking.end_date|date:"M d, Y" }} ({{ overdue_booking.end_date|timesince }} late)</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+                                <div class="stat-number">{{ active_bookings|default:"0" }}</div>
+                                <div class="stat-label">Active Bookings</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-history"></i>
+                                </div>
+                                <div class="stat-number">{{ past_bookings|default:"0" }}</div>
+                                <div class="stat-label">Past Bookings</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-tools"></i>
+                                </div>
+                                <div class="stat-number">{{ borrowed_items_count|default:"0" }}</div>
+                                <div class="stat-label">Items Borrowed</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-hand-holding-heart"></i>
+                                </div>
+                                <div class="stat-number">Ksh {{ total_contributed|default:"0" }}</div>
+                                <div class="stat-label">Total Contributed</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-star-half-alt"></i>
+                                </div>
+                                <div class="stat-number">{{ pending_reviews_count|default:"0" }}</div>
+                                <div class="stat-label">Pending Reviews</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-bell"></i>
+                                </div>
+                                <div class="stat-number" id="unreadNotificationsCount">{{ unread_notifications|default:"0" }}</div>
+                                <div class="stat-label">Unread Notifications</div>
+                            </div>
+                        </div>
+
+                        <!-- Upcoming Bookings -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Upcoming Bookings</h3>
+                                <a href="#bookings" class="btn btn-outline btn-small">View All</a>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Item</th>
+                                            <th>Dates</th>
+                                            <th>Status</th>
+                                            <th>Total</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for booking in user_bookings %}
+                                        <tr>
+                                            <td>
+                                                <div class="table-item">
+                                                    <img src="{{ booking.item.display_image_url }}" alt="{{ booking.item.name }}">
+                                                    <span>{{ booking.item.name }}</span>
+                                                </div>
+                                            </td>
+                                            <td>{{ booking.start_date|date:"M d" }} - {{ booking.end_date|date:"M d, Y" }}</td>
+                                            <td>
+                                                {% if booking.status == 'pending' %}
+                                                    <span class="badge badge-warning">Pending Approval</span>
+                                                {% elif booking.status == 'approved' %}
+                                                    <span class="badge badge-info">Approved - Payment Pending</span>
+                                                {% elif booking.status == 'paid' %}
+                                                    <span class="badge badge-primary">Paid - Ready for Pickup</span>
+                                                {% elif booking.status == 'active' %}
+                                                    <span class="badge badge-success">Active</span>
+                                                {% elif booking.status == 'completed' %}
+                                                    <span class="badge badge-secondary">Completed</span>
+                                                {% elif booking.status == 'cancelled' %}
+                                                    <span class="badge badge-danger">Cancelled</span>
+                                                {% else %}
+                                                    <span class="badge badge-light">{{ booking.get_status_display }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if booking.total_fee %}
+                                                    Ksh {{ booking.total_fee }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if booking.status == 'approved' %}
+                                                    {% if payments_enabled %}
+                                                    <button class="btn-icon js-make-payment" title="Make Payment" data-booking-id="{{ booking.booking_id }}">
+                                                        <i class="fas fa-credit-card"></i>
+                                                    </button>
+                                                    {% else %}
+                                                    <button class="btn-icon" disabled title="Payments are disabled on this demo deployment">
+                                                        <i class="fas fa-credit-card"></i>
+                                                    </button>
+                                                    {% endif %}
+                                                    <button
+                                                        type="button"
+                                                        class="btn-icon js-open-booking-chat"
+                                                        title="Open Pickup Chat"
+                                                        data-booking-id="{{ booking.id }}"
+                                                        data-booking-code="{{ booking.booking_id }}"
+                                                        data-item-name="{{ booking.item.name|escapejs }}"
+                                                        data-pickup-date="{{ booking.pickup_date|date:'M d, Y' }}"
+                                                        data-pickup-time="{{ booking.pickup_time|time:'g:i A' }}"
+                                                    >
+                                                        <i class="fas fa-comment-dots"></i>
+                                                    </button>
+                                                    {% if booking.chat_unread_count %}
+                                                    <span class="badge badge-warning" style="margin-left:0.35rem;">{{ booking.chat_unread_count }} new</span>
+                                                    {% endif %}
+                                                {% elif booking.status == 'paid' %}
+                                                    <div class="pickup-info">
+                                                        <small><i class="fas fa-map-marker-alt"></i> {{ booking.pickup_location|truncatechars:15 }}</small><br>
+                                                        <small><i class="fas fa-clock"></i> {{ booking.pickup_date|date:"M d" }} at {{ booking.pickup_time|time:"g:i A" }}</small>
+                                                        <div style="margin-top: 0.35rem;">
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-outline btn-small js-open-booking-chat"
+                                                                data-booking-id="{{ booking.id }}"
+                                                                data-booking-code="{{ booking.booking_id }}"
+                                                                data-item-name="{{ booking.item.name|escapejs }}"
+                                                                data-pickup-date="{{ booking.pickup_date|date:'M d, Y' }}"
+                                                                data-pickup-time="{{ booking.pickup_time|time:'g:i A' }}"
+                                                            >
+                                                                <i class="fas fa-comments"></i> Open Chat
+                                                            </button>
+                                                            {% if booking.chat_unread_count %}
+                                                            <span class="badge badge-warning" style="margin-left:0.35rem;">{{ booking.chat_unread_count }} new</span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                {% elif booking.status == 'completed' and booking.id in pending_borrower_review_ids %}
+                                                    <button
+                                                        type="button"
+                                                        class="btn btn-outline btn-small js-open-review-modal"
+                                                        data-booking-id="{{ booking.id }}"
+                                                        data-review-type="borrower_to_steward"
+                                                        data-item-name="{{ booking.item.name|escapejs }}"
+                                                        data-target-name="{{ booking.item.steward.username|escapejs }}"
+                                                    >
+                                                        <i class="fas fa-star"></i> Rate Item
+                                                    </button>
+                                                    <div style="margin-top: 0.35rem;">
+                                                        <span class="badge badge-warning">Review Pending</span>
+                                                    </div>
+                                                {% elif booking.status == 'completed' %}
+                                                    <span class="badge badge-success">Reviewed</span>
+                                                {% else %}
+                                                    <a class="btn-icon" href="/items/detail/{{ booking.item.slug }}/" title="View Item Details">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="5" style="text-align: center; padding: 2rem;">
+                                                <i class="fas fa-calendar-check" style="font-size: 2rem; color: var(--gray-color); margin-bottom: 0.5rem;"></i>
+                                                <p style="color: var(--gray-color);">No bookings yet. <a href="{% url 'browse' %}">Browse items</a> to make your first booking!</p>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Quick Actions</h3>
+                            </div>
+                            <div class="quick-actions">
+                                <a href="{% url 'suggest' %}" class="action-card">
+                                    <i class="fas fa-lightbulb"></i>
+                                    <span>Suggest New Item</span>
+                                </a>
+                                <a href="{% url 'goals' %}" class="action-card">
+                                    <i class="fas fa-bullseye"></i>
+                                    <span>Contribute to Goals</span>
+                                </a>
+                                <a href="{% url 'suggest' %}" class="action-card">
+                                    <i class="fas fa-history"></i>
+                                    <span>View Borrowing History</span>
+                                </a>
+                                <a href="{% url 'browse' %}" class="action-card">
+                                    <i class="fas fa-calendar-plus"></i>
+                                    <span>Make New Booking</span>
+                                </a>
+                                {% if not user.is_admin_approved and not user.is_superuser and not user.is_staff %}
+                                <a href="#settings" class="action-card">
+                                    <i class="fas fa-user-shield"></i>
+                                    {% if user.admin_request_status == 'pending' %}
+                                        <span>View Admin Request Status</span>
+                                    {% else %}
+                                        <span>Request Admin Access</span>
+                                    {% endif %}
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Available Categories</h3>
+                            </div>
+                            <div style="padding: 1rem; display: flex; flex-wrap: wrap; gap: 0.55rem;">
+                                {% for category in available_categories %}
+                                    <span class="badge badge-light" style="padding: 0.42rem 0.65rem;">{{ category.name }}</span>
+                                {% empty %}
+                                    <p style="color: var(--gray-color); margin: 0;">No categories added yet.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Recent Activity</h3>
+                            </div>
+                            <div style="padding: 1rem;">
+                                {% for activity in recent_activity %}
+                                    <div style="padding: 0.8rem 0; border-bottom: 1px solid var(--light-gray);">
+                                        <p style="margin: 0; font-weight: 600;">{{ activity.title }}</p>
+                                        <p style="margin: 0.2rem 0 0 0; color: var(--gray-color);">{{ activity.description }}</p>
+                                        <small style="color: var(--gray-color);">{{ activity.timestamp|timesince }} ago</small>
+                                    </div>
+                                {% empty %}
+                                    <p style="color: var(--gray-color);">No recent activity yet.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- My Bookings Section -->
+                    <section id="bookings" class="dashboard-section" style="display: none;">
+                        <div class="section-header">
+                            <h2>My Bookings</h2>
+                        </div>
+
+                        <div class="card">
+                            <div style="display:flex; gap: 0.75rem; flex-wrap: wrap; padding: 1rem 1rem 0 1rem; margin-bottom: 1.5rem;">
+                                <input type="text" class="form-input table-search" data-table-id="bookingsTable" placeholder="Search bookings..." style="max-width: 320px;">
+                                <select class="form-select table-page-size" data-table-id="bookingsTable" style="max-width: 170px;">
+                                    <option value="5">5 rows</option>
+                                    <option value="10" selected>10 rows</option>
+                                    <option value="20">20 rows</option>
+                                </select>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table paginated-table" id="bookingsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Item</th>
+                                            <th>Dates</th>
+                                            <th>Status</th>
+                                            <th>Pickup Location</th>
+                                            <th>Pickup Date & Time</th>
+                                            <th>Total Fee</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for booking in all_user_bookings %}
+                                        <tr>
+                                            <td>{{ booking.item.name }}</td>
+                                            <td>{{ booking.start_date|date:"M d, Y" }} - {{ booking.end_date|date:"M d, Y" }}</td>
+                                            <td>{{ booking.get_status_display }}</td>
+                                            <td>
+                                                {% if booking.pickup_location %}
+                                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                        <i class="fas fa-map-marker-alt" style="color: var(--secondary-color);"></i>
+                                                        <span>{{ booking.pickup_location }}</span>
+                                                    </div>
+                                                {% else %}
+                                                    <span style="color: var(--gray-color);">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if booking.pickup_date and booking.pickup_time %}
+                                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                        <i class="fas fa-calendar-alt" style="color: var(--secondary-color);"></i>
+                                                        <span>{{ booking.pickup_date|date:"M d, Y" }} at {{ booking.pickup_time|time:"g:i A" }}</span>
+                                                    </div>
+                                                {% elif booking.pickup_date %}
+                                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                        <i class="fas fa-calendar-alt" style="color: var(--secondary-color);"></i>
+                                                        <span>{{ booking.pickup_date|date:"M d, Y" }}</span>
+                                                    </div>
+                                                {% else %}
+                                                    <span style="color: var(--gray-color);">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{% if booking.total_fee %}Ksh {{ booking.total_fee }}{% else %}-{% endif %}</td>
+                                            <td>
+                                                {% if booking.status == 'approved' or booking.status == 'paid' %}
+                                                    <button
+                                                        type="button"
+                                                        class="btn btn-outline btn-small js-open-booking-chat"
+                                                        data-booking-id="{{ booking.id }}"
+                                                        data-booking-code="{{ booking.booking_id }}"
+                                                        data-item-name="{{ booking.item.name|escapejs }}"
+                                                        data-pickup-date="{{ booking.pickup_date|date:'M d, Y' }}"
+                                                        data-pickup-time="{{ booking.pickup_time|time:'g:i A' }}"
+                                                    >
+                                                        <i class="fas fa-comments"></i> Chat with Admin
+                                                    </button>
+                                                    {% if booking.chat_unread_count %}
+                                                    <div style="margin-top:0.35rem;"><span class="badge badge-warning">{{ booking.chat_unread_count }} new</span></div>
+                                                    {% endif %}
+                                                {% elif booking.status == 'completed' and booking.id in pending_borrower_review_ids %}
+                                                    <button
+                                                        type="button"
+                                                        class="btn btn-outline btn-small js-open-review-modal"
+                                                        data-booking-id="{{ booking.id }}"
+                                                        data-review-type="borrower_to_steward"
+                                                        data-item-name="{{ booking.item.name|escapejs }}"
+                                                        data-target-name="{{ booking.item.steward.username|escapejs }}"
+                                                    >
+                                                        <i class="fas fa-star"></i> Rate Item
+                                                    </button>
+                                                    <div style="margin-top: 0.35rem;">
+                                                        <span class="badge badge-warning">Review Pending</span>
+                                                    </div>
+                                                {% elif booking.status == 'completed' %}
+                                                    <span class="badge badge-success">Reviewed</span>
+                                                {% else %}
+                                                    <span style="color: var(--gray-color);">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="7" style="text-align:center;">No bookings yet.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="table-pagination" data-table-id="bookingsTable" style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem; padding: 0.75rem 1rem 1rem 1rem;">
+                                <span class="table-page-info" data-table-id="bookingsTable"></span>
+                                <div style="display:flex; gap:0.5rem;">
+                                    <button type="button" class="btn btn-outline btn-small table-prev" data-table-id="bookingsTable">Prev</button>
+                                    <button type="button" class="btn btn-outline btn-small table-next" data-table-id="bookingsTable">Next</button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="items" class="dashboard-section" style="display: none;">
+                        <div class="section-header">
+                            <h2>My Borrowed Items</h2>
+                        </div>
+                        <div class="card">
+                            <div style="display:flex; gap: 0.75rem; flex-wrap: wrap; padding: 1rem 1rem 0 1rem; margin-bottom: 1.5rem;">
+                                <input type="text" class="form-input table-search" data-table-id="itemsTable" placeholder="Search items..." style="max-width: 320px;">
+                                <select class="form-select table-page-size" data-table-id="itemsTable" style="max-width: 170px;">
+                                    <option value="5">5 rows</option>
+                                    <option value="10" selected>10 rows</option>
+                                    <option value="20">20 rows</option>
+                                </select>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table paginated-table" id="itemsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Category</th>
+                                            <th>Times Booked</th>
+                                            <th>Last Booking Date</th>
+                                            <th>Latest Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for borrowed in borrowed_item_history %}
+                                        <tr>
+                                            <td>{{ borrowed.item.name }}</td>
+                                            <td>{{ borrowed.item.category.name }}</td>
+                                            <td>{{ borrowed.booking_count }}</td>
+                                            <td>{{ borrowed.last_booking_date|date:"M d, Y" }}</td>
+                                            <td>{{ borrowed.latest_status }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="5" style="text-align:center;">You have not borrowed any items yet.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="table-pagination" data-table-id="itemsTable" style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem; padding: 0.75rem 1rem 1rem 1rem;">
+                                <span class="table-page-info" data-table-id="itemsTable"></span>
+                                <div style="display:flex; gap:0.5rem;">
+                                    <button type="button" class="btn btn-outline btn-small table-prev" data-table-id="itemsTable">Prev</button>
+                                    <button type="button" class="btn btn-outline btn-small table-next" data-table-id="itemsTable">Next</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header"><h3>Borrowing Snapshot</h3></div>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div>
+                                    <h4>Currently Borrowed</h4>
+                                    {% for booking in borrowed_items %}
+                                        <p>{{ booking.item.name }} <small>({{ booking.get_status_display }})</small></p>
+                                    {% empty %}
+                                        <p>No borrowed items right now.</p>
+                                    {% endfor %}
+                                </div>
+                                <div>
+                                    <h4>Recently Completed</h4>
+                                    {% for booking in completed_borrowed_items %}
+                                        <p>{{ booking.item.name }} <small>(Returned {{ booking.returned_at|date:"M d, Y"|default:"recently" }})</small></p>
+                                    {% empty %}
+                                        <p>No completed borrowings yet.</p>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header"><h3>Rate Items You Have Returned</h3></div>
+                            <div style="padding: 1rem; display: grid; gap: 0.75rem;">
+                                {% for booking in pending_borrower_reviews %}
+                                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; border-bottom: 1px solid var(--light-gray); padding-bottom: 0.75rem;">
+                                        <div>
+                                            <strong>{{ booking.item.name }}</strong>
+                                            <div style="color: var(--gray-color); font-size: 0.9rem;">Steward: {{ booking.item.steward.username }} • Returned {{ booking.returned_at|date:"M d, Y"|default:"recently" }}</div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            class="btn btn-outline btn-small js-open-review-modal"
+                                            data-booking-id="{{ booking.id }}"
+                                            data-review-type="borrower_to_steward"
+                                            data-item-name="{{ booking.item.name|escapejs }}"
+                                            data-target-name="{{ booking.item.steward.username|escapejs }}"
+                                        >
+                                            <i class="fas fa-star"></i> Rate Item
+                                        </button>
+                                    </div>
+                                {% empty %}
+                                    <p style="color: var(--gray-color); margin: 0;">No pending item ratings.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="suggestions" class="dashboard-section" style="display: none;">
+                        <div class="section-header">
+                            <h2>My Suggestions</h2>
+                            <a href="{% url 'suggest' %}" class="btn btn-primary">Add Suggestion</a>
+                        </div>
+                        <div class="card">
+                            <div style="display:flex; gap: 0.75rem; flex-wrap: wrap; padding: 1rem 1rem 0 1rem; margin-bottom: 1.5rem;">
+                                <input type="text" class="form-input table-search" data-table-id="suggestionsTable" placeholder="Search suggestions..." style="max-width: 320px;">
+                                <select class="form-select table-page-size" data-table-id="suggestionsTable" style="max-width: 170px;">
+                                    <option value="5">5 rows</option>
+                                    <option value="10" selected>10 rows</option>
+                                    <option value="20">20 rows</option>
+                                </select>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table paginated-table" id="suggestionsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Status</th>
+                                            <th>Votes</th>
+                                            <th>Submitted</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for suggestion in suggestions %}
+                                        <tr>
+                                            <td>{{ suggestion.name }}</td>
+                                            <td>
+                                                {% if suggestion.status == 'rejected' %}
+                                                    <span class="badge badge-danger">Rejected</span>
+                                                {% elif suggestion.status == 'campaign_created' %}
+                                                    <span class="badge badge-info">Campaign Created</span>
+                                                {% elif suggestion.status == 'approved' %}
+                                                    <span class="badge badge-success">Approved</span>
+                                                {% else %}
+                                                    <span class="badge badge-warning">{{ suggestion.get_status_display }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ suggestion.votes }}</td>
+                                            <td>{{ suggestion.created_at|date:"M d, Y" }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="4" style="text-align:center;">No suggestions submitted yet.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="table-pagination" data-table-id="suggestionsTable" style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem; padding: 0.75rem 1rem 1rem 1rem;">
+                                <span class="table-page-info" data-table-id="suggestionsTable"></span>
+                                <div style="display:flex; gap:0.5rem;">
+                                    <button type="button" class="btn btn-outline btn-small table-prev" data-table-id="suggestionsTable">Prev</button>
+                                    <button type="button" class="btn btn-outline btn-small table-next" data-table-id="suggestionsTable">Next</button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="contributions" class="dashboard-section" style="display: none;">
+                        <div class="section-header">
+                            <h2>My Contributions</h2>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Total Contributed: Ksh {{ total_contributed }}</h3>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table paginated-table" id="contributionsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Goal</th>
+                                            <th>Amount</th>
+                                            <th>Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for contribution in my_contributions %}
+                                        <tr>
+                                            <td>{{ contribution.campaign.title }}</td>
+                                            <td>Ksh {{ contribution.amount }}</td>
+                                            <td>{{ contribution.created_at|date:"M d, Y" }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="3" style="text-align:center;">No contributions yet.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div style="display:flex; gap: 0.75rem; flex-wrap: wrap; padding: 0 1rem 0.25rem 1rem;">
+                                <input type="text" class="form-input table-search" data-table-id="contributionsTable" placeholder="Search contributions..." style="max-width: 320px;">
+                                <select class="form-select table-page-size" data-table-id="contributionsTable" style="max-width: 170px;">
+                                    <option value="5">5 rows</option>
+                                    <option value="10" selected>10 rows</option>
+                                    <option value="20">20 rows</option>
+                                </select>
+                            </div>
+                            <div class="table-pagination" data-table-id="contributionsTable" style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem; padding: 0.25rem 1rem 1rem 1rem;">
+                                <span class="table-page-info" data-table-id="contributionsTable"></span>
+                                <div style="display:flex; gap:0.5rem;">
+                                    <button type="button" class="btn btn-outline btn-small table-prev" data-table-id="contributionsTable">Prev</button>
+                                    <button type="button" class="btn btn-outline btn-small table-next" data-table-id="contributionsTable">Next</button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Messages / Notifications Section -->
+                    <section id="messages" class="dashboard-section" style="display: none;">
+                        <div class="section-header">
+                            <h2>Notifications</h2>
+                            {% if unread_notifications > 0 %}
+                                <button class="btn btn-primary js-mark-all-notifications">Mark All as Read</button>
+                            {% endif %}
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Recent Updates
+                                    {% if unread_notifications > 0 %}
+                                        <span class="badge badge-warning" id="recentUpdatesBadge" style="margin-left: 0.5rem;">{{ unread_notifications }} New</span>
+                                    {% endif %}
+                                </h3>
+                            </div>
+                            <div style="padding: 1rem;">
+                                {% for notification in recent_notifications %}
+                                    <div data-notification-id="{{ notification.id }}" class="notification-row{% if not notification.is_read %} is-unread{% endif %}" style="padding: 0.9rem; border-bottom: 1px solid var(--light-gray); border-radius: 4px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;">
+                                            <div style="flex: 1;">
+                                                <p style="font-weight: 600; margin: 0;">{{ notification.title }}</p>
+                                                <p style="margin: 0.25rem 0 0 0; color: var(--gray-color);">{{ notification.message|linebreaksbr }}</p>
+                                            </div>
+                                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                                {% if not notification.is_read %}
+                                                    <span class="badge badge-warning">New</span>
+                                                    <button class="btn-icon js-mark-notification-read" title="Mark as read" data-notification-id="{{ notification.id }}" style="color: var(--secondary-color); border: none; background: none; cursor: pointer; padding: 0.25rem;">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div style="margin-top: 0.4rem; color: var(--gray-color); font-size: 0.85rem;">
+                                            {{ notification.created_at|timesince }} ago
+                                        </div>
+                                    </div>
+                                {% empty %}
+                                    <div style="text-align: center; padding: 2rem; color: var(--gray-color);">
+                                        <i class="fas fa-bell" style="font-size: 1.8rem; margin-bottom: 0.6rem;"></i>
+                                        <p>No notifications yet.</p>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="settings" class="dashboard-section" style="display: none;">
+                        <div class="section-header">
+                            <h2>Account Settings</h2>
+                        </div>
+                        <div class="card">
+                            <p>Manage profile details and password from your profile page.</p>
+                            <a href="{% url 'profile' %}" class="btn btn-primary">Open Profile Settings</a>
+                        </div>
+
+                        {% if not user.is_admin_approved and not user.is_superuser and not user.is_staff %}
+                        <div class="card" style="margin-top: 1rem;">
+                            <div class="card-header">
+                                <h3>Request Admin Access</h3>
+                            </div>
+
+                            {% if user.admin_request_status == 'pending' %}
+                                <p style="margin: 0; color: var(--gray-color);">
+                                    Your request is currently pending review by an existing admin.
+                                    {% if user.admin_request_date %}
+                                        Submitted {{ user.admin_request_date|date:"M d, Y" }}.
+                                    {% endif %}
+                                </p>
+                            {% else %}
+                                <p style="color: var(--gray-color); margin-top: 0;">
+                                    Submit a request to become a community admin. Existing admins review requests before admin panel access is granted.
+                                </p>
+                                <form method="post" action="{% url 'request_admin_access' %}" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                                        <label for="adminRequestReason">Why do you want admin access?</label>
+                                        <textarea
+                                            id="adminRequestReason"
+                                            name="admin_reason"
+                                            class="form-textarea"
+                                            rows="4"
+                                            placeholder="Explain your motivation and how you can help the community"
+                                            required
+                                        >{% if user.admin_request_status == 'rejected' and user.admin_request_reason %}{{ user.admin_request_reason }}{% endif %}</textarea>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0.75rem;">
+                                        <label for="adminRequestIdPhoto">Upload ID Photo</label>
+                                        <input
+                                            type="file"
+                                            id="adminRequestIdPhoto"
+                                            name="admin_id_photo"
+                                            class="form-input"
+                                            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                                            {% if not user.admin_request_id_photo %}required{% endif %}
+                                        >
+                                        <small class="form-help">Required for first admin request. Accepted: JPG, PNG, WEBP. Max 5MB.</small>
+                                        {% if user.admin_request_id_photo %}
+                                        <small class="form-help" style="display:block; margin-top:0.35rem;">
+                                            Current file on record: <a href="{{ user.admin_request_id_photo.url }}" target="_blank" rel="noopener">View uploaded ID photo</a>
+                                        </small>
+                                        {% endif %}
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-user-shield"></i> Submit Admin Request
+                                    </button>
+                                </form>
+
+                                {% if user.admin_request_status == 'rejected' %}
+                                <p style="margin-top: 0.75rem; color: var(--danger-color);">
+                                    Your previous request was not approved. You can submit a new request with updated details.
+                                </p>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </section>
+                </main>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <a href="{% url 'index' %}" class="logo">
+                        <i class="fas fa-link"></i> Knot
+                    </a>
+                    <p>Tying Communities Together Through Shared Resources</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <div id="reviewModal" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width: 560px; width: calc(100% - 2rem);">
+            <div class="modal-header" style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 0.75rem;">
+                <h3 id="reviewModalTitle">Leave a Review</h3>
+                <button type="button" class="btn-icon js-close-review-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <p id="reviewTargetText" style="color: var(--gray-color); margin-bottom: 1rem;"></p>
+            <form id="reviewForm">
+                <input type="hidden" id="reviewBookingId">
+                <input type="hidden" id="reviewType">
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label class="form-label" for="reviewRating">Overall Rating (1-5)</label>
+                    <input class="form-input" id="reviewRating" type="number" min="1" max="5" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label class="form-label" for="reviewTimeliness">Timeliness Rating (1-5)</label>
+                    <input class="form-input" id="reviewTimeliness" type="number" min="1" max="5" placeholder="Required when rating borrower">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label class="form-label" for="reviewComment">Comment</label>
+                    <textarea class="form-textarea" id="reviewComment" rows="4" required placeholder="Share your experience..."></textarea>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap: 0.5rem;">
+                    <button type="button" class="btn btn-outline js-close-review-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Review</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="pickupChangeModal" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width: 620px; width: calc(100% - 2rem);">
+            <div class="modal-header" style="display:flex; justify-content: space-between; align-items:center; margin-bottom: 0.75rem;">
+                <h3><i class="fas fa-comments"></i> Pickup Chat</h3>
+                <button type="button" class="btn-icon js-close-pickup-change-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <p id="pickupChangeTargetText" style="color: var(--gray-color); margin-bottom: 0.9rem;"></p>
+            <div
+                id="pickupChatMessages"
+                class="pickup-chat-thread"
+            ></div>
+            <form
+                id="pickupChangeForm"
+                method="post"
+                data-chat-messages-template="{% url 'booking_chat_messages' 0 %}"
+                data-chat-send-template="{% url 'booking_chat_send' 0 %}"
+            >
+                {% csrf_token %}
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label for="preferredPickupDate">Preferred Pickup Date (optional)</label>
+                    <input type="date" id="preferredPickupDate" name="preferred_pickup_date" class="form-input">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label for="preferredPickupTime">Preferred Pickup Time (optional)</label>
+                    <input type="time" id="preferredPickupTime" name="preferred_pickup_time" class="form-input">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="pickupChangeMessage">Message to Admin *</label>
+                    <textarea
+                        id="pickupChangeMessage"
+                        name="message"
+                        class="form-textarea"
+                        rows="4"
+                        required
+                        placeholder="Explain why the chosen pickup time does not work and suggest alternatives."
+                    ></textarea>
+                    <small id="pickupTypingHint" style="display:none; color: var(--gray-color);">Typing...</small>
+                </div>
+                <div class="pickup-chat-footer" style="padding-left: 0.25rem; padding-right: 0.25rem;">
+                    <button type="button" class="btn btn-outline js-close-pickup-change-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Send Message</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'js/app.js' %}"></script>
+    <script src="{% static 'js/auth.js' %}"></script>
+    <script>
+        // Notification toast system
+        function showNotification(message, type = 'info') {
+            const existing = document.querySelector('.dash-toast');
+            if (existing) {
+                existing.remove();
+            }
+
+            const toast = document.createElement('div');
+            toast.className = 'dash-toast';
+            const color = type === 'success'
+                ? '#166534'
+                : type === 'error'
+                    ? '#991b1b'
+                    : type === 'warning'
+                        ? '#92400e'
+                        : '#1e3a8a';
+            const bg = type === 'success'
+                ? '#dcfce7'
+                : type === 'error'
+                    ? '#fee2e2'
+                    : type === 'warning'
+                        ? '#fef3c7'
+                        : '#dbeafe';
+
+            toast.style.position = 'fixed';
+            toast.style.right = '20px';
+            toast.style.bottom = '20px';
+            toast.style.zIndex = '9999';
+            toast.style.maxWidth = '360px';
+            toast.style.padding = '0.85rem 1rem';
+            toast.style.borderRadius = '8px';
+            toast.style.boxShadow = '0 8px 20px rgba(0,0,0,0.15)';
+            toast.style.backgroundColor = bg;
+            toast.style.color = color;
+            toast.style.fontWeight = '600';
+            toast.style.lineHeight = '1.5';
+            toast.textContent = message;
+
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab navigation
+            const sidebarLinks = document.querySelectorAll('.sidebar-menu a');
+            const sectionLinks = document.querySelectorAll('a[href^="#"]');
+            const sections = document.querySelectorAll('.dashboard-section');
+
+            function showDashboardSection(targetId) {
+                if (!targetId || !document.getElementById(targetId)) {
+                    return;
+                }
+
+                // Update active states on sidebar links
+                sidebarLinks.forEach((l) => {
+                    const href = (l.getAttribute('href') || '').replace('#', '');
+                    l.classList.toggle('active', href === targetId);
+                });
+
+                // Show selected section
+                sections.forEach((section) => {
+                    section.style.display = section.id === targetId ? 'block' : 'none';
+                });
+            }
+            
+            sectionLinks.forEach((link) => {
+                link.addEventListener('click', function(e) {
+                    const targetId = (this.getAttribute('href') || '').substring(1);
+                    if (!targetId || !document.getElementById(targetId)) {
+                        return;
+                    }
+
+                    e.preventDefault();
+                    showDashboardSection(targetId);
+                });
+            });
+
+            if (window.location.hash) {
+                showDashboardSection(window.location.hash.substring(1));
+            }
+            
+            const tableStates = {};
+
+            function initializeTable(tableId) {
+                const table = document.getElementById(tableId);
+                if (!table) {
+                    return;
+                }
+
+                const rows = Array.from(table.querySelectorAll('tbody tr')).filter((row) => row.cells.length > 1);
+                tableStates[tableId] = {
+                    allRows: rows,
+                    filteredRows: rows,
+                    page: 1,
+                    pageSize: 10,
+                };
+
+                renderTablePage(tableId);
+            }
+
+            function renderTablePage(tableId) {
+                const state = tableStates[tableId];
+                if (!state) {
+                    return;
+                }
+
+                const table = document.getElementById(tableId);
+                const totalRows = state.filteredRows.length;
+                const totalPages = Math.max(1, Math.ceil(totalRows / state.pageSize));
+                state.page = Math.min(state.page, totalPages);
+
+                const start = (state.page - 1) * state.pageSize;
+                const end = start + state.pageSize;
+
+                state.allRows.forEach((row) => {
+                    row.style.display = 'none';
+                });
+
+                state.filteredRows.slice(start, end).forEach((row) => {
+                    row.style.display = '';
+                });
+
+                const pageInfo = document.querySelector(`.table-page-info[data-table-id="${tableId}"]`);
+                if (pageInfo) {
+                    pageInfo.textContent = `Showing ${totalRows === 0 ? 0 : start + 1}-${Math.min(end, totalRows)} of ${totalRows}`;
+                }
+
+                const prevBtn = document.querySelector(`.table-prev[data-table-id="${tableId}"]`);
+                const nextBtn = document.querySelector(`.table-next[data-table-id="${tableId}"]`);
+                if (prevBtn) prevBtn.disabled = state.page <= 1;
+                if (nextBtn) nextBtn.disabled = state.page >= totalPages;
+
+                const emptyRow = table.querySelector('tbody tr td[colspan]')?.parentElement;
+                if (emptyRow && totalRows > 0) {
+                    emptyRow.style.display = 'none';
+                }
+            }
+
+            function wireTableControls(tableId) {
+                const searchInput = document.querySelector(`.table-search[data-table-id="${tableId}"]`);
+                const pageSizeSelect = document.querySelector(`.table-page-size[data-table-id="${tableId}"]`);
+                const prevBtn = document.querySelector(`.table-prev[data-table-id="${tableId}"]`);
+                const nextBtn = document.querySelector(`.table-next[data-table-id="${tableId}"]`);
+
+                if (searchInput) {
+                    searchInput.addEventListener('input', function() {
+                        const state = tableStates[tableId];
+                        if (!state) return;
+                        const query = this.value.trim().toLowerCase();
+                        state.filteredRows = state.allRows.filter((row) => row.innerText.toLowerCase().includes(query));
+                        state.page = 1;
+                        renderTablePage(tableId);
+                    });
+                }
+
+                if (pageSizeSelect) {
+                    pageSizeSelect.addEventListener('change', function() {
+                        const state = tableStates[tableId];
+                        if (!state) return;
+                        state.pageSize = parseInt(this.value, 10) || 10;
+                        state.page = 1;
+                        renderTablePage(tableId);
+                    });
+                }
+
+                if (prevBtn) {
+                    prevBtn.addEventListener('click', function() {
+                        const state = tableStates[tableId];
+                        if (!state || state.page <= 1) return;
+                        state.page -= 1;
+                        renderTablePage(tableId);
+                    });
+                }
+
+                if (nextBtn) {
+                    nextBtn.addEventListener('click', function() {
+                        const state = tableStates[tableId];
+                        if (!state) return;
+                        const maxPage = Math.max(1, Math.ceil(state.filteredRows.length / state.pageSize));
+                        if (state.page >= maxPage) return;
+                        state.page += 1;
+                        renderTablePage(tableId);
+                    });
+                }
+            }
+
+            ['bookingsTable', 'itemsTable', 'suggestionsTable', 'contributionsTable'].forEach((tableId) => {
+                initializeTable(tableId);
+                wireTableControls(tableId);
+            });
+
+            document.querySelectorAll('.js-open-review-modal').forEach((button) => {
+                button.addEventListener('click', function() {
+                    const bookingId = parseInt(this.getAttribute('data-booking-id'), 10);
+                    const reviewType = this.getAttribute('data-review-type');
+                    const itemName = this.getAttribute('data-item-name') || '';
+                    const targetName = this.getAttribute('data-target-name') || '';
+                    openReviewModal(bookingId, reviewType, itemName, targetName);
+                });
+            });
+
+            document.querySelectorAll('.js-close-review-modal').forEach((button) => {
+                button.addEventListener('click', function() {
+                    closeReviewModal();
+                });
+            });
+
+            document.querySelectorAll('.js-open-pickup-change-modal').forEach((button) => {
+                button.addEventListener('click', function() {
+                    const bookingId = parseInt(this.getAttribute('data-booking-id'), 10);
+                    const bookingCode = this.getAttribute('data-booking-code') || '';
+                    const itemName = this.getAttribute('data-item-name') || '';
+                    const pickupDate = this.getAttribute('data-pickup-date') || 'Not set';
+                    const pickupTime = this.getAttribute('data-pickup-time') || 'Not set';
+                    openPickupChangeModal(bookingId, bookingCode, itemName, pickupDate, pickupTime);
+                });
+            });
+
+            document.querySelectorAll('.js-open-booking-chat').forEach((button) => {
+                button.addEventListener('click', function() {
+                    const bookingId = parseInt(this.getAttribute('data-booking-id'), 10);
+                    const bookingCode = this.getAttribute('data-booking-code') || '';
+                    const itemName = this.getAttribute('data-item-name') || '';
+                    const pickupDate = this.getAttribute('data-pickup-date') || 'Not set';
+                    const pickupTime = this.getAttribute('data-pickup-time') || 'Not set';
+                    openPickupChangeModal(bookingId, bookingCode, itemName, pickupDate, pickupTime);
+                });
+            });
+
+            document.querySelectorAll('.js-close-pickup-change-modal').forEach((button) => {
+                button.addEventListener('click', function() {
+                    closePickupChangeModal();
+                });
+            });
+
+            const markAllNotificationsButton = document.querySelector('.js-mark-all-notifications');
+            if (markAllNotificationsButton) {
+                markAllNotificationsButton.addEventListener('click', function() {
+                    markAllNotificationsRead();
+                });
+            }
+
+            document.querySelectorAll('.js-mark-notification-read[data-notification-id]').forEach((button) => {
+                button.addEventListener('click', function() {
+                    const notificationId = parseInt(this.getAttribute('data-notification-id'), 10);
+                    markNotificationRead(notificationId, this);
+                });
+            });
+
+            document.querySelectorAll('.js-make-payment[data-booking-id]').forEach((button) => {
+                button.addEventListener('click', function() {
+                    const bookingId = this.getAttribute('data-booking-id');
+                    makePayment(bookingId);
+                });
+            });
+
+            // Logout functionality
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // You can add a confirmation dialog here
+                    window.location.href = "{% url 'logout' %}";
+                });
+            }
+            
+            // Make payment for approved booking
+            window.makePayment = function(bookingId) {
+                if (!{{ payments_enabled|yesno:"true,false" }}) {
+                    showNotification('Payments are disabled on this demo deployment.', 'warning');
+                    return;
+                }
+                showPromptModal(
+                    'M-Pesa Payment',
+                    'Enter your phone number to receive the M-Pesa STK push prompt:',
+                    '07xxxxxxxx',
+                    (phone) => {
+                        fetch(`/api/bookings/bookings/${bookingId}/pay/`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                            },
+                            body: JSON.stringify({ phone_number: phone })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'payment_pending') {
+                                showNotification('STK push sent. Complete payment on your phone.', 'success');
+                                setTimeout(function() {
+                                    verifyPaymentStatus(bookingId);
+                                }, 8000);
+                            } else {
+                                showNotification(data.error || 'Payment initiation failed.', 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            showNotification('An error occurred while starting payment.', 'error');
+                        });
+                    },
+                    'tel',
+                    'Valid format: 254727123456 or 07xxxxxxxx'
+                );
+            }
+
+            var paymentVerificationRetries = {};
+            
+            function verifyPaymentStatus(bookingId, retryCount = 0) {
+                const MAX_RETRIES = 15; // Max ~90 seconds with 6 second intervals
+                const maxRetriesKey = `booking_${bookingId}_max_retries`;
+                
+                if (!paymentVerificationRetries[bookingId]) {
+                    paymentVerificationRetries[bookingId] = 0;
+                }
+                
+                // Check if we've hit max retries
+                if (paymentVerificationRetries[bookingId] >= MAX_RETRIES) {
+                    showNotification(
+                        'Payment verification timed out. Check M-Pesa messages or refresh the page. Booking ID: ' + bookingId,
+                        'warning'
+                    );
+                    paymentVerificationRetries[bookingId] = 0;
+                    return;
+                }
+                
+                fetch(`/api/bookings/bookings/${bookingId}/verify_payment/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'paid') {
+                        showNotification('Payment confirmed! Your booking is now marked as paid.', 'success');
+                        paymentVerificationRetries[bookingId] = 0;
+                        location.reload();
+                        return;
+                    }
+
+                    paymentVerificationRetries[bookingId]++;
+                    const attemptsLeft = MAX_RETRIES - paymentVerificationRetries[bookingId];
+                    
+                    if (attemptsLeft > 0) {
+                        var retry = confirm(
+                            `Payment is still pending confirmation.\n\n` +
+                            `Attempts left: ${attemptsLeft}/${MAX_RETRIES}\n\n` +
+                            `Click OK to check again in 6 seconds, or Cancel to stop checking.`
+                        );
+                        if (retry) {
+                            setTimeout(function() {
+                                verifyPaymentStatus(bookingId, paymentVerificationRetries[bookingId]);
+                            }, 6000);
+                        } else {
+                            paymentVerificationRetries[bookingId] = 0;
+                            showNotification(
+                                'Payment verification paused. Refresh the page to check status.',
+                                'info'
+                            );
+                        }
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Verification error:', error);
+                    paymentVerificationRetries[bookingId]++;
+                    showNotification('Error checking payment status. Please try again.', 'error');
+                });
+            }
+
+            // Mark notification as read
+            window.markNotificationRead = function(notificationId, button) {
+                fetch('/api/core/notifications/mark_read/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ notification_ids: [notificationId] })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(`API error ${response.status}: ${text}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const notifElement = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                    if (notifElement) {
+                        notifElement.style.backgroundColor = 'transparent';
+                        notifElement.classList.remove('is-unread');
+                        const badge = notifElement.querySelector('.badge-warning');
+                        const checkBtn = button.parentElement;
+                        if (badge) badge.remove();
+                        if (checkBtn) checkBtn.remove();
+                    }
+
+                    const currentCount = parseInt(document.getElementById('unreadNotificationsCount')?.textContent || '0', 10) || 0;
+                    updateUnreadNotificationUI(currentCount - 1);
+                })
+                .catch(error => {
+                    console.error('Error marking notification as read:', error);
+                    showNotification('Failed to mark notification as read.', 'error');
+                });
+            }
+
+            // Mark all notifications as read
+            window.markAllNotificationsRead = function() {
+                fetch('/api/core/notifications/mark_read/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ all: true })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(`API error ${response.status}: ${text}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Remove all "New" badges and check buttons
+                    document.querySelectorAll('[data-notification-id]').forEach(notif => {
+                        notif.style.backgroundColor = 'transparent';
+                        notif.classList.remove('is-unread');
+                        const badge = notif.querySelector('.badge-warning');
+                        const checkBtn = notif.querySelector('.js-mark-notification-read')?.parentElement;
+                        if (badge) badge.remove();
+                        if (checkBtn) checkBtn.remove();
+                    });
+                    updateUnreadNotificationUI(0);
+                })
+                .catch(error => {
+                    console.error('Error marking all notifications as read:', error);
+                    showNotification('Failed to mark all notifications as read.', 'error');
+                });
+            }
+
+            window.openReviewModal = function(bookingId, reviewType, itemName, targetName) {
+                document.getElementById('reviewBookingId').value = bookingId;
+                document.getElementById('reviewType').value = reviewType;
+                document.getElementById('reviewRating').value = '';
+                document.getElementById('reviewTimeliness').value = '';
+                document.getElementById('reviewComment').value = '';
+
+                const isStewardToBorrower = reviewType === 'steward_to_borrower';
+                document.getElementById('reviewModalTitle').textContent = isStewardToBorrower
+                    ? 'Rate Borrower Timeliness'
+                    : 'Rate Item & Steward Experience';
+                document.getElementById('reviewTargetText').textContent = isStewardToBorrower
+                    ? `Booking: ${itemName}. Rate how timely ${targetName} was with the return.`
+                    : `Booking: ${itemName}. Share your experience with steward ${targetName}.`;
+
+                document.getElementById('reviewTimeliness').required = isStewardToBorrower;
+                document.getElementById('reviewModal').style.display = 'flex';
+            }
+
+            window.closeReviewModal = function() {
+                document.getElementById('reviewModal').style.display = 'none';
+            }
+
+            var pickupChatBookingId = null;
+            var pickupChatRefreshInterval = null;
+            var pickupTypingHintTimer = null;
+
+            function renderPickupChatMessages(messages) {
+                const container = document.getElementById('pickupChatMessages');
+                if (!container) return;
+
+                if (!messages || !messages.length) {
+                    container.innerHTML = '<div class="pickup-chat-empty">No messages yet. Start the chat below.</div>';
+                    return;
+                }
+
+                container.innerHTML = messages.map((msg) => {
+                    const initialsBg = msg.is_mine ? 'var(--secondary-color)' : 'var(--gray-color)';
+                    return `
+                        <div class="pickup-chat-message ${msg.is_mine ? 'is-mine' : 'is-theirs'}">
+                            <div class="pickup-chat-avatar" style="background:${initialsBg};">${msg.sender_initials || 'U'}</div>
+                            <div class="pickup-chat-bubble">
+                                <div class="pickup-chat-sender">${msg.sender}</div>
+                                <div class="pickup-chat-content">${msg.content}</div>
+                                <div class="pickup-chat-meta" title="${msg.created_at}">${msg.created_at_relative || msg.created_at}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                container.scrollTop = container.scrollHeight;
+            }
+
+            function updateUnreadNotificationUI(nextCount) {
+                const count = Math.max(0, parseInt(nextCount, 10) || 0);
+                const countEl = document.getElementById('unreadNotificationsCount');
+                const badgeEl = document.getElementById('recentUpdatesBadge');
+                const markAllBtn = document.querySelector('.js-mark-all-notifications');
+
+                if (countEl) {
+                    countEl.textContent = count;
+                }
+
+                if (badgeEl) {
+                    if (count > 0) {
+                        badgeEl.textContent = `${count} New`;
+                    } else {
+                        badgeEl.remove();
+                    }
+                }
+
+                if (markAllBtn && count <= 0) {
+                    markAllBtn.remove();
+                }
+            }
+
+            function loadPickupChatMessages(bookingId) {
+                const form = document.getElementById('pickupChangeForm');
+                const template = form.getAttribute('data-chat-messages-template') || '';
+                const url = template.replace('/0/', `/${bookingId}/`);
+
+                fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.error) {
+                        showNotification(data.error, 'error');
+                        return;
+                    }
+                    renderPickupChatMessages(data.messages || []);
+                })
+                .catch(() => {
+                    showNotification('Could not load chat messages.', 'error');
+                });
+            }
+
+            function startPickupChatAutoRefresh() {
+                stopPickupChatAutoRefresh();
+                pickupChatRefreshInterval = setInterval(function() {
+                    if (pickupChatBookingId) {
+                        loadPickupChatMessages(pickupChatBookingId);
+                    }
+                }, 7000);
+            }
+
+            function stopPickupChatAutoRefresh() {
+                if (pickupChatRefreshInterval) {
+                    clearInterval(pickupChatRefreshInterval);
+                    pickupChatRefreshInterval = null;
+                }
+            }
+
+            window.openPickupChangeModal = function(bookingId, bookingCode, itemName, pickupDate, pickupTime) {
+                const modal = document.getElementById('pickupChangeModal');
+                const form = document.getElementById('pickupChangeForm');
+                form.reset();
+                pickupChatBookingId = bookingId;
+
+                document.getElementById('pickupChangeTargetText').textContent =
+                    `Booking ${bookingCode} (${itemName}). Current pickup schedule: ${pickupDate} at ${pickupTime}.`;
+
+                modal.style.display = 'flex';
+                loadPickupChatMessages(bookingId);
+                startPickupChatAutoRefresh();
+                document.getElementById('pickupChangeMessage').focus();
+            }
+
+            window.closePickupChangeModal = function() {
+                document.getElementById('pickupChangeModal').style.display = 'none';
+                stopPickupChatAutoRefresh();
+                pickupChatBookingId = null;
+            }
+
+            const pickupChangeMessageInput = document.getElementById('pickupChangeMessage');
+            if (pickupChangeMessageInput) {
+                pickupChangeMessageInput.addEventListener('input', function() {
+                    const hint = document.getElementById('pickupTypingHint');
+                    if (!hint) return;
+                    hint.style.display = this.value.trim() ? 'block' : 'none';
+                    if (pickupTypingHintTimer) {
+                        clearTimeout(pickupTypingHintTimer);
+                    }
+                    pickupTypingHintTimer = setTimeout(function() {
+                        hint.style.display = 'none';
+                    }, 1400);
+                });
+
+                pickupChangeMessageInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        const form = document.getElementById('pickupChangeForm');
+                        if (form) {
+                            form.requestSubmit();
+                        }
+                    }
+                });
+            }
+
+            document.getElementById('pickupChangeForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                if (!pickupChatBookingId) {
+                    showNotification('Booking context is missing for this chat.', 'error');
+                    return;
+                }
+
+                const form = event.currentTarget;
+                const sendTemplate = form.getAttribute('data-chat-send-template') || '';
+                const sendUrl = sendTemplate.replace('/0/', `/${pickupChatBookingId}/`);
+
+                const message = (document.getElementById('pickupChangeMessage').value || '').trim();
+                const preferredDate = (document.getElementById('preferredPickupDate').value || '').trim();
+                const preferredTime = (document.getElementById('preferredPickupTime').value || '').trim();
+
+                if (!message) {
+                    showNotification('Please enter a message before sending.', 'warning');
+                    return;
+                }
+
+                fetch(sendUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        preferred_pickup_date: preferredDate,
+                        preferred_pickup_time: preferredTime,
+                    }),
+                })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.error) {
+                        showNotification(data.error, 'error');
+                        return;
+                    }
+                    document.getElementById('pickupChangeMessage').value = '';
+                    document.getElementById('preferredPickupDate').value = '';
+                    document.getElementById('preferredPickupTime').value = '';
+                    document.getElementById('pickupTypingHint').style.display = 'none';
+                    loadPickupChatMessages(pickupChatBookingId);
+                    showNotification('Message sent.', 'success');
+                })
+                .catch(() => {
+                    showNotification('Failed to send chat message.', 'error');
+                });
+            });
+
+            document.getElementById('reviewForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const bookingId = parseInt(document.getElementById('reviewBookingId').value, 10);
+                const reviewType = document.getElementById('reviewType').value;
+                const payload = {
+                    booking: bookingId,
+                    review_type: reviewType,
+                    rating: parseInt(document.getElementById('reviewRating').value, 10),
+                    comment: document.getElementById('reviewComment').value.trim(),
+                };
+
+                const timelinessValue = document.getElementById('reviewTimeliness').value;
+                if (timelinessValue) {
+                    payload.timeliness_rating = parseInt(timelinessValue, 10);
+                }
+
+                fetch('/api/reviews/reviews/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    },
+                    body: JSON.stringify(payload),
+                })
+                .then((response) => {
+                    if (!response.ok) {
+                        return response.json().then((errorData) => {
+                            const message = errorData.detail || errorData.non_field_errors?.[0] || 'Failed to submit review.';
+                            throw new Error(message);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(() => {
+                    closeReviewModal();
+                    showNotification('Review submitted successfully!', 'success');
+                    window.location.reload();
+                })
+                .catch((error) => {
+                    showNotification(error.message || 'Could not submit review.', 'error');
+                });
+            });
+        });
+
+        // Modal Functions
+        function showPromptModal(title, message, inputPlaceholder, onSubmit, inputType = 'text', hint = '') {
+            const modal = document.getElementById('promptModal');
+            const modalOverlay = document.getElementById('modalOverlay');
+            const modalTitle = modal.querySelector('.modal-title');
+            const modalMessage = modal.querySelector('.modal-message');
+            const modalInput = modal.querySelector('.modal-input');
+            const modalHint = modal.querySelector('.modal-input-hint');
+            const submitBtn = modal.querySelector('.modal-btn-confirm');
+            const cancelBtn = modal.querySelector('.modal-btn-cancel');
+
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modalInput.placeholder = inputPlaceholder;
+            modalInput.type = inputType;
+            modalInput.value = '';
+            modalHint.textContent = hint;
+
+            const closeModal = () => {
+                modalOverlay.classList.remove('active');
+            };
+
+            submitBtn.onclick = () => {
+                const value = modalInput.value.trim();
+                if (!value) {
+                    modalInput.focus();
+                    return;
+                }
+                closeModal();
+                onSubmit(value);
+            };
+            cancelBtn.onclick = closeModal;
+            modalOverlay.onclick = (e) => {
+                if (e.target === modalOverlay) closeModal();
+            };
+
+            // Allow Enter key to submit
+            modalInput.onkeypress = (e) => {
+                if (e.key === 'Enter') {
+                    submitBtn.click();
+                }
+            };
+
+            modalOverlay.classList.add('active');
+            setTimeout(() => modalInput.focus(), 100);
+        }
+    </script>
+</body>
+
+<!-- Modal Overlays -->
+<div id="modalOverlay" class="modal-overlay">
+    <!-- Prompt Modal -->
+    <div id="promptModal" class="modal-box">
+        <div class="modal-icon info"><i class="fas fa-keyboard"></i></div>
+        <h3 class="modal-title">Enter Information</h3>
+        <p class="modal-message">Please enter the required information:</p>
+        <input type="text" class="modal-input" placeholder="Enter value here">
+        <div class="modal-input-hint"></div>
+        <div class="modal-buttons">
+            <button class="modal-btn modal-btn-cancel">Cancel</button>
+            <button class="modal-btn modal-btn-confirm">Submit</button>
+        </div>
+    </div>
+</div>
+
+</html>

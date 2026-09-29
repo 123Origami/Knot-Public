@@ -1,0 +1,975 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book {{ item.name }} - Knot</title>
+    <script src="{% static 'js/theme-bootstrap.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+    /* Light Mode Colors */
+    --bg-color: #ffffff;
+    --card-bg: #f8f9fa;
+    --text-main: #333333;
+    --text-muted: #666666;
+    --border-color: #dddddd;
+    --input-bg: #ffffff;
+    --primary-accent: #007bff; /* Keep your main brand color */
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Dark Mode Colors */
+        --bg-color: #121212;
+        --card-bg: #1e1e1e;
+        --text-main: #e0e0e0;
+        --text-muted: #b0b0b0;
+        --border-color: #333333;
+        --input-bg: #2d2d2d;
+    }
+}
+        .booking-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            padding: 2rem 0;
+        }
+        .calendar-section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+        }
+        .calendar-day-header {
+            text-align: center;
+            font-weight: 600;
+            padding: 0.5rem;
+            color: #718096;
+        }
+        .calendar-date {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        .calendar-date.available {
+            background: white;
+            border: 1px solid #68d391;
+            color: #68d391;
+            cursor: pointer;
+        }
+        .calendar-date.unavailable {
+            background: #f5f5f5;
+            color: #ccc;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+        .calendar-date.selected {
+            background: #5a67d8;
+            color: white;
+            border: none;
+        }
+        .calendar-date.range-start {
+            background: #5a67d8;
+            color: white;
+            border-radius: 8px 0 0 8px;
+        }
+        .calendar-date.range-end {
+            background: #5a67d8;
+            color: white;
+            border-radius: 0 8px 8px 0;
+        }
+        .calendar-date.in-range {
+            background: rgba(90, 103, 216, 0.2);
+        }
+        .summary-section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 100px;
+        }
+        .item-preview {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .item-preview img {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+        .selected-dates {
+            background: #fff5f9;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 0.85rem 0;
+        }
+        .price-breakdown {
+            margin: 0.85rem 0;
+            padding: 1rem;
+            background: #fff5f9;
+            border-radius: 8px;
+        }
+        .price-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+        }
+        .price-item.total {
+            border-top: 1px solid #f8d0e0;
+            margin-top: 0.5rem;
+            padding-top: 0.75rem;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        .legend {
+            margin-top: 0.85rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            border-radius: 4px;
+            margin-right: 0.25rem;
+        }
+        @media (max-width: 768px) {
+            .booking-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        /* Dropdown Menu Styles */
+.user-dropdown {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.user-dropdown:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    min-width: 220px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    z-index: 1000;
+    border: 1px solid #e2e8f0;
+}
+
+.user-dropdown.active .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-menu a,
+.dropdown-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    color: #2d3748;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.dropdown-menu a:hover,
+.dropdown-toggle-row:hover {
+    background: #f7fafc;
+}
+
+.dropdown-menu a i,
+.dropdown-toggle-row i {
+    width: 20px;
+    color: #718096;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: #e2e8f0;
+    margin: 4px 0;
+}
+
+.dropdown-toggle-row {
+    justify-content: space-between;
+    cursor: pointer;
+}
+
+.switch-compact {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+
+.switch-compact input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch-compact .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e0;
+    transition: 0.3s;
+    border-radius: 20px;
+}
+
+.switch-compact .slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.switch-compact input:checked + .slider {
+    background-color: #5a67d8;
+}
+
+.switch-compact input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+/* Dark Mode Styles */
+body.dark-mode {
+    background-color: #1a1a2e;
+    color: #e2e8f0;
+}
+
+body.dark-mode .calendar-section,
+body.dark-mode .summary-section {
+    background-color: #16213e;
+    color: #e2e8f0;
+}
+
+body.dark-mode .dropdown-menu {
+    background-color: #0f3460;
+    border-color: #16213e;
+}
+
+body.dark-mode .dropdown-menu a,
+body.dark-mode .dropdown-toggle-row {
+    color: #e2e8f0;
+}
+
+body.dark-mode .dropdown-menu a:hover,
+body.dark-mode .dropdown-toggle-row:hover {
+    background-color: #16213e;
+}
+
+body.dark-mode .dropdown-divider {
+    background-color: #16213e;
+}
+
+body.dark-mode .selected-dates,
+body.dark-mode .price-breakdown {
+    background: #0f3460;
+}
+
+/* Hamburger Menu for Mobile */
+.hamburger {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #2d3748;
+}
+
+@media (max-width: 768px) {
+    .hamburger {
+        display: block;
+    }
+    
+    .nav-menu {
+        position: fixed;
+        left: -100%;
+        top: 70px;
+        flex-direction: column;
+        background-color: white;
+        width: 100%;
+        text-align: center;
+        transition: 0.3s;
+        box-shadow: 0 10px 27px rgba(0,0,0,0.05);
+        padding: 1rem 0;
+        z-index: 1000;
+    }
+    
+    body.dark-mode .nav-menu {
+        background-color: #16213e;
+    }
+    
+    .nav-menu.active {
+        left: 0;
+    }
+    
+    .user-dropdown {
+        justify-content: center;
+    }
+    
+    .dropdown-menu {
+        position: static;
+        box-shadow: none;
+        margin-top: 10px;
+        opacity: 0;
+        display: none;
+    }
+    
+    .user-dropdown.active .dropdown-menu {
+        display: block;
+        opacity: 1;
+    }
+}
+    </style>
+</head>
+<body>
+    {% csrf_token %}
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="{% url 'index' %}" class="logo">
+                <i class="fas fa-link"></i> Knot
+            </a>
+            <ul class="nav-menu">
+    <li><a href="{% url 'user_dashboard' %}">Dashboard</a></li>
+    <li><a href="{% url 'browse' %}">Browse Items</a></li>
+    <li><a href="{% url 'suggest' %}">Suggest Item</a></li>
+    <li><a href="{% url 'goals' %}">Community Goals</a></li>
+    <li class="user-menu">
+        <div class="user-dropdown">
+            {% if user.profile_picture %}
+            <img src="{{ user.profile_picture.url }}" alt="User" class="user-avatar">
+            {% else %}
+            <img src="https://ui-avatars.com/api/?name={{ user.first_name|default:user.username }}&background=ffebf3&color=2d3748" 
+                alt="User" class="user-avatar">
+            {% endif %}
+            <span class="user-name">{{ user.first_name|default:user.username }}</span>
+            <i class="fas fa-chevron-down"></i>
+            <div class="dropdown-menu">
+                <a href="{% url 'user_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                <a href="{% url 'profile' %}"><i class="fas fa-user"></i> Profile</a>
+            
+                <div class="dropdown-toggle-row">
+                    <span><i class="fas fa-moon"></i> Dark Mode</span>
+                    <label class="switch switch-compact" for="darkModeToggle">
+                        <input type="checkbox" id="darkModeToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="dropdown-divider"></div>
+                <a href="{% url 'logout' %}" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </div>
+    </li>
+</ul>
+<button class="hamburger" id="hamburger">
+    <i class="fas fa-bars"></i>
+</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="booking-container">
+            <div class="calendar-section">
+                <div class="calendar-header">
+                    <button id="prevMonth" class="btn btn-outline btn-small"><i class="fas fa-chevron-left"></i></button>
+                    <h2 id="currentMonth"></h2>
+                    <button id="nextMonth" class="btn btn-outline btn-small"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div class="calendar-grid" id="calendarGrid">
+                    <div class="calendar-day-header">Sun</div>
+                    <div class="calendar-day-header">Mon</div>
+                    <div class="calendar-day-header">Tue</div>
+                    <div class="calendar-day-header">Wed</div>
+                    <div class="calendar-day-header">Thu</div>
+                    <div class="calendar-day-header">Fri</div>
+                    <div class="calendar-day-header">Sat</div>
+                </div>
+                <div class="legend">
+                    <span><span class="legend-color" style="background: #68d391;"></span> Available</span>
+                    <span><span class="legend-color" style="background: #f5f5f5;"></span> Booked</span>
+                    <span><span class="legend-color" style="background: #f8f3e8;"></span> Buffer (unavailable)</span>
+                    <span><span class="legend-color" style="background: #5a67d8;"></span> Selected</span>
+                </div>
+            </div>
+
+            <div class="summary-section">
+                <div class="item-preview">
+                    <img src="{{ item.display_image_url }}" alt="{{ item.name }}">
+                    <div>
+                        <h3>{{ item.name }}</h3>
+                        <p>Ksh {{ item.daily_rate }}/day</p>
+                        <p><i class="fas fa-map-marker-alt"></i> {{ item.location_details }}</p>
+                    </div>
+                </div>
+
+                <div class="selected-dates">
+                    <h4>Selected Dates</h4>
+                    <p id="startDateDisplay">Start date: Not selected</p>
+                    <p id="endDateDisplay">End date: Not selected</p>
+                    <p><i class="fas fa-clock"></i> Max borrow: {{ item.max_borrow_days }} days</p>
+                </div>
+
+                <div class="price-breakdown" id="priceBreakdown" style="display: none;">
+                    <h4>Price Breakdown</h4>
+                    <div class="price-item">
+                        <span>Daily Rate (Ksh {{ item.daily_rate }})</span>
+                        <span id="dailyRateTotal">Ksh 0</span>
+                    </div>
+                    <div class="price-item">
+                        <span>Number of Days</span>
+                        <span id="daysCount">0</span>
+                    </div>
+                    {% if item.deposit_amount %}
+                    <div class="price-item">
+                        <span>Security Deposit</span>
+                        <span>Ksh {{ item.deposit_amount }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="price-item total">
+                        <span>Total</span>
+                        <span id="totalAmount">Ksh 0</span>
+                    </div>
+                </div>
+
+                <form id="bookingForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="startDate" name="start_date">
+                    <input type="hidden" id="endDate" name="end_date">
+                    <div class="form-group">
+                        <label>Purpose of Borrowing</label>
+                        <textarea id="purpose" class="form-textarea" rows="3" 
+                                  placeholder="Tell us what you need this item for..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="borrowerIdPhoto">Upload ID Photo *</label>
+                        <input
+                            type="file"
+                            id="borrowerIdPhoto"
+                            name="borrower_id_photo"
+                            class="form-input"
+                            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                            required
+                        >
+                        <small class="form-help">Required for booking requests. Accepted: JPG, PNG, WEBP. Max 5MB.</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block" id="submitBtn" disabled>
+                        <i class="fas fa-calendar-check"></i> Request Booking
+                    </button>
+                </form>
+                <div class="warning-text" id="maxDaysWarning" style="display: none; text-align: center; margin-top: 1rem;"></div>
+            </div>
+        </div>
+    </div>
+
+   <script src="{% static 'js/app.js' %}"></script>
+   <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // User dropdown toggle
+        const userDropdown = document.querySelector('.user-dropdown');
+        if (userDropdown) {
+            userDropdown.addEventListener('click', function(e) {
+                e.stopPropagation();
+                this.classList.toggle('active');
+            });
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            document.querySelectorAll('.user-dropdown').forEach(function(dropdown) {
+                if (!dropdown.contains(e.target)) {
+                    dropdown.classList.remove('active');
+                }
+            });
+        });
+
+        // Hamburger menu
+        const hamburger = document.getElementById('hamburger');
+        const navMenu = document.querySelector('.nav-menu');
+        if (hamburger && navMenu) {
+            hamburger.addEventListener('click', function() {
+                navMenu.classList.toggle('active');
+                hamburger.classList.toggle('active');
+            });
+        }
+    });
+    function showNotification(message, type = 'success', duration = 5000) {
+        if (!document.getElementById('notificationContainer')) {
+            const container = document.createElement('div');
+            container.id = 'notificationContainer';
+            container.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                max-width: 400px;
+            `;
+            document.body.appendChild(container);
+        }
+
+        const container = document.getElementById('notificationContainer');
+        const notification = document.createElement('div');
+        
+        let bgColor, borderColor, icon, textColor;
+        if (type === 'success') {
+            bgColor = '#f0fdf4';
+            borderColor = '#22c55e';
+            icon = 'fa-check-circle';
+            textColor = '#166534';
+        } else if (type === 'error') {
+            bgColor = '#fef2f2';
+            borderColor = '#ef4444';
+            icon = 'fa-xmark-circle';
+            textColor = '#7f1d1d';
+        } else if (type === 'warning') {
+            bgColor = '#fffbeb';
+            borderColor = '#f59e0b';
+            icon = 'fa-triangle-exclamation';
+            textColor = '#92400e';
+        } else {
+            bgColor = '#f0f9ff';
+            borderColor = '#3b82f6';
+            icon = 'fa-circle-info';
+            textColor = '#0c2340';
+        }
+
+        notification.innerHTML = `
+            <div style="
+                background: ${bgColor};
+                border-left: 4px solid ${borderColor};
+                border-radius: 8px;
+                padding: 16px 16px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+                animation: slideInRight 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            ">
+                <i class="fas ${icon}" style="font-size: 20px; color: ${borderColor}; flex-shrink: 0;"></i>
+                <div style="flex: 1; color: ${textColor}; font-weight: 500; line-height: 1.4;">
+                    ${message}
+                </div>
+                <button onclick="this.closest('[style*=animation]').parentElement.remove()" style="
+                    background: none;
+                    border: none;
+                    color: ${textColor};
+                    cursor: pointer;
+                    font-size: 18px;
+                    padding: 0;
+                    opacity: 0.6;
+                    transition: opacity 0.2s;
+                    flex-shrink: 0;
+                " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">
+                    ✕
+                </button>
+            </div>
+        `;
+
+        container.appendChild(notification);
+
+        if (duration > 0) {
+            setTimeout(() => {
+                notification.firstChild.style.animation = 'slideOutRight 0.3s ease-out';
+                setTimeout(() => notification.remove(), 300);
+            }, duration);
+        }
+
+        return notification;
+    }
+
+    if (!document.getElementById('notificationStyles')) {
+        const style = document.createElement('style');
+        style.id = 'notificationStyles';
+        style.textContent = `
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(420px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            
+            @keyframes slideOutRight {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(420px);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    // =====================================================
+
+    var bookedDates = {{ booked_dates|default:'[]'|safe }};
+    if (!Array.isArray(bookedDates)) bookedDates = [];
+    var bufferDates = {{ buffer_dates|default:'[]'|safe }};
+    if (!Array.isArray(bufferDates)) bufferDates = [];
+    var dailyRate = parseFloat("{{ item.daily_rate|default:'0' }}") || 0;
+    var depositAmount = parseFloat("{{ item.deposit_amount|default:'0' }}") || 0;
+    var itemId = parseInt("{{ item.id|default:'0' }}");
+    
+    var currentDate = new Date();
+    var selectedStartDate = null;
+    var selectedEndDate = null;
+    var maxBorrowDays = parseInt("{{ item.max_borrow_days|default:'14' }}");
+    var todayDateStr = formatDate(new Date());
+    
+    function formatDate(date) {
+        var year = date.getFullYear();
+        var month = String(date.getMonth() + 1).padStart(2, '0');
+        var day = String(date.getDate()).padStart(2, '0');
+        return year + '-' + month + '-' + day;
+    }
+    function getDateRange(startDate, endDate) {
+    var dates = [];
+    var currentDate = new Date(startDate);
+    var end = new Date(endDate);
+    
+    while (currentDate <= end) {
+        dates.push(formatDate(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+    return dates;
+}
+
+function isDateAvailable(dateStr) {
+    if (dateStr < todayDateStr) {
+        return false;
+    }
+        // booked or buffer days are not available
+        if (bookedDates.indexOf(dateStr) !== -1) return false;
+        if (bufferDates.indexOf(dateStr) !== -1) return false;
+    return true;
+}
+    
+    function renderCalendar() {
+        var year = currentDate.getFullYear();
+        var month = currentDate.getMonth();
+        
+        var firstDay = new Date(year, month, 1);
+        var lastDay = new Date(year, month + 1, 0);
+        var startDayOfWeek = firstDay.getDay();
+        
+        var monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                          'July', 'August', 'September', 'October', 'November', 'December'];
+        document.getElementById('currentMonth').innerHTML = monthNames[month] + ' ' + year;
+        
+        var calendarGrid = document.getElementById('calendarGrid');
+        
+        while (calendarGrid.children.length > 7) {
+            calendarGrid.removeChild(calendarGrid.lastChild);
+        }
+        
+        for (var i = 0; i < startDayOfWeek; i++) {
+            var emptyCell = document.createElement('div');
+            emptyCell.className = 'calendar-date';
+            emptyCell.style.visibility = 'hidden';
+            calendarGrid.appendChild(emptyCell);
+        }
+        
+        for (var day = 1; day <= lastDay.getDate(); day++) {
+            var date = new Date(year, month, day);
+            var dateStr = formatDate(date);
+            var isUnavailable = dateStr < todayDateStr;
+
+            var cell = document.createElement('div');
+            // priority: booked > buffer > available
+            if (bookedDates.indexOf(dateStr) !== -1) {
+                cell.className = 'calendar-date booked';
+            } else if (bufferDates.indexOf(dateStr) !== -1 || isUnavailable) {
+                cell.className = 'calendar-date unavailable buffer';
+            } else {
+                cell.className = 'calendar-date available';
+            }
+            cell.innerHTML = day;
+            cell.setAttribute('data-date', dateStr);
+            
+            if (selectedStartDate && selectedEndDate) {
+                var currentDateObj = new Date(dateStr);
+                var startDateObj = new Date(selectedStartDate);
+                var endDateObj = new Date(selectedEndDate);
+                
+                if (dateStr === selectedStartDate) {
+                    cell.className = 'calendar-date range-start';
+                } else if (dateStr === selectedEndDate) {
+                    cell.className = 'calendar-date range-end';
+                } else if (currentDateObj > startDateObj && currentDateObj < endDateObj) {
+                    cell.className = 'calendar-date in-range';
+                }
+            } else if (selectedStartDate && dateStr === selectedStartDate) {
+                cell.className = 'calendar-date selected';
+            }
+            
+            if (!isUnavailable) {
+                cell.style.cursor = 'pointer';
+                cell.onclick = (function(d) {
+                    return function() { selectDate(d); };
+                })(dateStr);
+            }
+            
+            calendarGrid.appendChild(cell);
+        }
+        
+        updateSummary();
+    }
+    
+    function selectDate(dateStr) {
+    if (dateStr < todayDateStr) {
+        showNotification('Past dates are unavailable for booking.', 'warning');
+        return;
+    }
+
+    if (!selectedStartDate || (selectedStartDate && selectedEndDate)) {
+        // Start new selection
+        selectedStartDate = dateStr;
+        selectedEndDate = null;
+    } else if (selectedStartDate && !selectedEndDate) {
+        var startDateObj = new Date(selectedStartDate);
+        var endDateObj = new Date(dateStr);
+        var daysDiff = Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24));
+        var requestedDays = daysDiff + 1;
+        
+        // Check if end date is before start date
+        if (endDateObj < startDateObj) {
+            // Swap if end date is before start date
+            selectedEndDate = selectedStartDate;
+            selectedStartDate = dateStr;
+        } 
+        // Check if exceeds max borrow days
+        else if (requestedDays > maxBorrowDays) {
+            var warning = document.getElementById('maxDaysWarning');
+            if (warning) {
+                warning.style.display = 'block';
+                warning.innerHTML = '⚠️ Cannot borrow for more than ' + maxBorrowDays + ' days. Please select a shorter period.';
+                setTimeout(function() {
+                    warning.style.display = 'none';
+                }, 3000);
+            }
+            return;
+        }
+        // Check if all dates in range are available
+        else {
+            var datesInRange = getDateRange(selectedStartDate, dateStr);
+            var allAvailable = true;
+            for (var i = 0; i < datesInRange.length; i++) {
+                if (!isDateAvailable(datesInRange[i])) {
+                    allAvailable = false;
+                    break;
+                }
+            }
+            
+            if (allAvailable) {
+                selectedEndDate = dateStr;
+            } else {
+                showNotification('Some dates in this range are already booked. Please select a different range.', 'error');
+                return;
+            }
+        }
+    }
+    
+    renderCalendar();
+}
+    function updateSummary() {
+        var startDisplay = document.getElementById('startDateDisplay');
+        var endDisplay = document.getElementById('endDateDisplay');
+        var priceBreakdown = document.getElementById('priceBreakdown');
+        var daysCountSpan = document.getElementById('daysCount');
+        var dailyRateTotalSpan = document.getElementById('dailyRateTotal');
+        var totalAmountSpan = document.getElementById('totalAmount');
+        var submitBtn = document.getElementById('submitBtn');
+        
+        if (selectedStartDate && selectedEndDate) {
+            var start = new Date(selectedStartDate);
+            var end = new Date(selectedEndDate);
+            var days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+            var subtotal = days * dailyRate;
+            var total = subtotal + depositAmount;
+            
+            startDisplay.innerHTML = 'Start: ' + selectedStartDate;
+            endDisplay.innerHTML = 'End: ' + selectedEndDate;
+            daysCountSpan.innerHTML = days;
+            dailyRateTotalSpan.innerHTML = 'Ksh ' + subtotal.toLocaleString();
+            totalAmountSpan.innerHTML = 'Ksh ' + total.toLocaleString();
+            priceBreakdown.style.display = 'block';
+            submitBtn.disabled = false;
+            
+            document.getElementById('startDate').value = selectedStartDate;
+            document.getElementById('endDate').value = selectedEndDate;
+        } else {
+            startDisplay.innerHTML = 'Start date: Not selected';
+            endDisplay.innerHTML = 'End date: Not selected';
+            priceBreakdown.style.display = 'none';
+            submitBtn.disabled = true;
+        }
+    }
+    
+    document.getElementById('prevMonth').onclick = function() {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        renderCalendar();
+    };
+    
+    document.getElementById('nextMonth').onclick = function() {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        renderCalendar();
+    };
+    
+    document.getElementById('bookingForm').onsubmit = function(e) {
+        e.preventDefault();
+        
+        var startDate = document.getElementById('startDate').value;
+        var endDate = document.getElementById('endDate').value;
+        var purpose = document.getElementById('purpose').value;
+        var borrowerIdPhotoInput = document.getElementById('borrowerIdPhoto');
+        var borrowerIdPhoto = borrowerIdPhotoInput && borrowerIdPhotoInput.files ? borrowerIdPhotoInput.files[0] : null;
+        
+        if (!startDate || !endDate) {
+            showNotification('Please select both start and end dates', 'warning');
+            return;
+        }
+
+        if (startDate < todayDateStr || endDate < todayDateStr) {
+            showNotification('Past dates cannot be booked.', 'error');
+            return;
+        }
+
+        if (!itemId) {
+            showNotification('Missing required fields: item_id. Please refresh and try again.', 'error');
+            return;
+        }
+
+        if (!borrowerIdPhoto) {
+            showNotification('Please upload your ID photo before submitting the booking request.', 'warning');
+            return;
+        }
+
+        var startDateObj = new Date(startDate);
+        var endDateObj = new Date(endDate);
+        if (endDateObj < startDateObj) {
+            showNotification('End date cannot be before start date.', 'error');
+            return;
+        }
+
+        var requestedDays = Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24)) + 1;
+        if (requestedDays > maxBorrowDays) {
+            showNotification('This item can only be booked for up to ' + maxBorrowDays + ' days.', 'error');
+            return;
+        }
+        
+        var submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+        
+        var formData = new FormData();
+        formData.append('item_id', itemId);
+        formData.append('start_date', startDate);
+        formData.append('end_date', endDate);
+        formData.append('purpose', purpose);
+        formData.append('borrower_id_photo', borrowerIdPhoto);
+
+        fetch('/api/bookings/create/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: formData
+        })
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(data) {
+            if (data.status === 'success' || data.booking_id) {
+                showNotification('Booking request sent! The steward will review your request.', 'success', 4000);
+                setTimeout(() => {
+                    window.location.href = '/dashboard/';
+                }, 1500);
+            } else {
+                showNotification(data.error || 'Booking failed. Please try again.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-calendar-check"></i> Request Booking';
+            }
+        })
+        .catch(function(error) {
+            console.error('Error:', error);
+            showNotification('Failed to create booking. Please try again.', 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-calendar-check"></i> Request Booking';
+        });
+    };
+    
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    renderCalendar();
+</script>
+</body>
+</html>

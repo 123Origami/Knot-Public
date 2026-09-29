@@ -1,0 +1,705 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Knot</title>
+    <script src="{% static 'js/theme-bootstrap.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .profile-header {
+            background: white;
+            padding: 1rem 0;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        .profile-cover {
+            position: relative;
+            height: 135px;
+            background: var(--primary-light);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--light-gray);
+            overflow: hidden;
+        }
+        .profile-avatar {
+            position: absolute;
+            bottom: -42px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 104px;
+            height: 104px;
+            border-radius: 50%;
+            border: 4px solid white;
+            background: white;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .avatar-upload {
+            position: absolute;
+            bottom: 8px;
+            right: 0;
+            background: #e83e8c;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            border: 2px solid white;
+            transition: var(--transition);
+        }
+        .avatar-upload:hover {
+            background: #d63384;
+            transform: scale(1.1);
+        }
+        .profile-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1rem 0;
+            border-bottom: 2px solid var(--light-gray);
+            padding-bottom: 0.75rem;
+        }
+        .profile-tab {
+            padding: 0.75rem 2rem;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--gray-color);
+            cursor: pointer;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+        .profile-tab:hover {
+            background: var(--primary-light);
+            color: var(--dark-color);
+        }
+        .profile-tab.active {
+            background: var(--primary-color);
+            color: var(--dark-color);
+        }
+        .tab-content {
+            display: none;
+            padding: 1.25rem;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        .info-item {
+            padding: 0.85rem 1rem;
+            background: var(--primary-light);
+            border-radius: var(--border-radius);
+        }
+        .info-label {
+            font-size: 0.85rem;
+            color: var(--gray-color);
+            margin-bottom: 0.25rem;
+        }
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        .verification-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(104, 211, 145, 0.2);
+            color: var(--success-color);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .verification-badge.pending {
+            background: rgba(246, 173, 85, 0.2);
+            color: var(--warning-color);
+        }
+        .verification-badge.unverified {
+            background: rgba(252, 129, 129, 0.2);
+            color: var(--danger-color);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.85rem;
+            margin: 1.25rem 0;
+        }
+        .stat-box {
+            text-align: center;
+            padding: 1rem;
+            background: var(--primary-light);
+            border-radius: var(--border-radius);
+        }
+        .stat-number {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--secondary-color);
+        }
+        .stat-label {
+            color: var(--gray-color);
+            font-size: 0.9rem;
+        }
+        .activity-list {
+            margin-top: 0.75rem;
+        }
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.85rem 0;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .danger-zone {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1rem;
+            background: linear-gradient(135deg, rgba(248, 208, 224, 0.35) 0%, rgba(252, 129, 129, 0.12) 100%);
+            border: 1px solid rgba(252, 129, 129, 0.35);
+            border-radius: var(--border-radius);
+        }
+
+        .danger-zone-title {
+            color: #8b3a62;
+        }
+
+        .danger-zone-form {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .danger-zone-input {
+            padding: 0.55rem 0.7rem;
+            border: 1px solid rgba(139, 58, 98, 0.35);
+            border-radius: 10px;
+            min-width: 135px;
+            background: #fff8fc;
+            color: #5a1b3a;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .danger-zone-input:focus {
+            border-color: #8b3a62;
+            box-shadow: 0 0 0 3px rgba(139, 58, 98, 0.15);
+        }
+
+        .danger-zone-button {
+            background: linear-gradient(135deg, #c9487a 0%, #b13f6b 100%);
+            color: white;
+            border: none;
+        }
+
+        .danger-zone-button:hover {
+            background: linear-gradient(135deg, #b13f6b 0%, #9f355f 100%);
+            transform: translateY(-1px);
+        }
+
+        .dark-mode-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.85rem 1rem;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--light-gray);
+            background: var(--primary-light);
+            margin-bottom: 0.85rem;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 28px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            inset: 0;
+            cursor: pointer;
+            background-color: #cbd5e0;
+            transition: 0.25s;
+            border-radius: 999px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.25s;
+            border-radius: 50%;
+        }
+
+        .switch input:checked + .slider {
+            background-color: var(--secondary-color);
+        }
+
+        .switch input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="{% if user.is_authenticated %}{% url 'user_dashboard' %}{% else %}{% url 'index' %}{% endif %}" class="logo">
+                <i class="fas fa-link"></i> Knot
+            </a>
+            <ul class="nav-menu">
+                {% if user.is_authenticated %}
+                    <li><a href="{% url 'user_dashboard' %}">Dashboard</a></li>
+                {% else %}
+                    <li><a href="{% url 'index' %}">Home</a></li>
+                {% endif %}
+                <li><a href="{% url 'browse' %}">Browse Items</a></li>
+                <li><a href="{% url 'suggest' %}">Suggest Item</a></li>
+                <li><a href="{% url 'goals' %}">Community Goals</a></li>
+                <li class="auth-buttons">
+                    <div class="nav-user-info">
+                        {% if user.is_authenticated %}
+                            <span class="user-badge">
+                                <i class="fas fa-user"></i> {{ user.username }}
+                            </span>
+                            <a href="{% url 'profile' %}" class="btn-login active">Profile</a>
+                            <a href="{% url 'logout' %}" class="btn-login">Logout</a>
+                        {% else %}
+                            <a href="{% url 'login' %}" class="btn-login">Login</a>
+                            <a href="{% url 'signup' %}" class="btn-signup">Sign Up</a>
+                        {% endif %}
+                    </div>
+                </li>
+            </ul>
+            <button class="hamburger" id="hamburger">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <div class="container">
+            <div style="text-align: center;">
+                <h1><i class="fas fa-user-circle"></i> My Profile</h1>
+                <p>Manage your account settings and view your activity</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <section class="dashboard">
+        <div class="container">
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Profile Card -->
+            <div class="profile-cover">
+                <div class="profile-avatar">
+                    {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}">
+                    {% else %}
+                        <img src="https://ui-avatars.com/api/?name={{ user.first_name|default:user.username }}&background=ffebf3&color=2d3748&size=120" alt="User Avatar" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover;">
+                    {% endif %}
+                    <button type="button" id="changeAvatarBtn" class="avatar-upload" title="Change profile photo" aria-label="Change profile photo">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Profile Tabs -->
+            <div class="profile-tabs">
+                <button class="profile-tab active" data-tab="overview">Overview</button>
+                <button class="profile-tab" data-tab="edit">Edit Profile</button>
+                <button class="profile-tab" data-tab="security">Security</button>
+                <button class="profile-tab" data-tab="activity">Activity</button>
+                {% if user.is_admin_approved %}
+                    <button class="profile-tab" data-tab="admin">Admin Panel</button>
+                {% endif %}
+            </div>
+
+            <!-- Overview Tab -->
+            <div class="tab-content active" id="tab-overview">
+                <h2>Profile Overview</h2>
+                
+                <!-- Verification Status -->
+                <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+                    <span class="verification-badge {% if user.email_verified %}verified{% else %}unverified{% endif %}">
+                        <i class="fas fa-{% if user.email_verified %}check-circle{% else %}times-circle{% endif %}"></i>
+                        Email {% if user.email_verified %}Verified{% else %}Unverified{% endif %}
+                    </span>
+                    <span class="verification-badge {% if user.phone_verified %}verified{% else %}pending{% endif %}">
+                        <i class="fas fa-{% if user.phone_verified %}check-circle{% else %}clock{% endif %}"></i>
+                        Phone {% if user.phone_verified %}Verified{% else %}Pending{% endif %}
+                    </span>
+                    <span class="verification-badge {% if user.id_verified %}verified{% else %}unverified{% endif %}">
+                        <i class="fas fa-{% if user.id_verified %}check-circle{% else %}id-card{% endif %}"></i>
+                        ID {% if user.id_verified %}Verified{% else %}Not Verified{% endif %}
+                    </span>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-number">{{ user.total_reviews|default:"0" }}</div>
+                        <div class="stat-label">Reviews</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">{{ user.average_rating|default:"0.0" }}</div>
+                        <div class="stat-label">Rating</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">{{ user.successful_bookings|default:"0" }}</div>
+                        <div class="stat-label">Items Borrowed</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">{{ user.successful_lendings|default:"0" }}</div>
+                        <div class="stat-label">Items Lent</div>
+                    </div>
+                </div>
+
+                <!-- Personal Information -->
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Full Name</div>
+                        <div class="info-value">{{ user.get_full_name|default:"Not provided" }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Username</div>
+                        <div class="info-value">@{{ user.username }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Email</div>
+                        <div class="info-value">{{ user.email }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Phone</div>
+                        <div class="info-value">{{ user.phone_number|default:"Not provided" }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Location</div>
+                        <div class="info-value">{{ user.location|default:"Not provided" }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Member Since</div>
+                        <div class="info-value">{{ user.date_joined|date:"F j, Y" }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Profile Tab -->
+            <div class="tab-content" id="tab-edit">
+                <h2>Edit Profile</h2>
+                <form method="post" enctype="multipart/form-data" action="{% url 'update_profile' %}">
+                    {% csrf_token %}
+
+                    <div class="form-group">
+                        <label class="form-label" for="avatarInput">Profile Photo</label>
+                        <input type="file" id="avatarInput" name="profile_picture" class="form-input" accept="image/*">
+                        <small class="form-help" id="avatarFileHelp">Choose a photo, then click Save Changes to update your dashboard avatar.</small>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-input" name="first_name" value="{{ user.first_name }}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-input" name="last_name" value="{{ user.last_name }}">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-input" name="username" value="{{ user.username }}" required>
+                        <small class="form-help">Must be unique. You can only use a username not already in the system.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" name="email" value="{{ user.email }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" class="form-input" name="phone_number" value="{{ user.phone_number|default:'' }}" 
+                               placeholder="0712345678">
+                        <small class="form-help">Kenyan format: 0712345678 or 254712345678</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Location</label>
+                        <input type="text" class="form-input" name="location" value="{{ user.location|default:'' }}" 
+                               placeholder="e.g., Westlands, Nairobi">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Bio</label>
+                        <textarea class="form-textarea" name="bio" placeholder="Tell us a little about yourself...">{{ user.bio|default:'' }}</textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <button type="reset" class="btn btn-outline">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Security Tab -->
+            <div class="tab-content" id="tab-security">
+                <h2>Security Settings</h2>
+
+                <div class="dark-mode-row">
+                    <div>
+                        <strong>Dark Mode</strong>
+                        <p style="margin: 0; font-size: 0.9rem; color: var(--gray-color);">Switch between light and dark theme any time.</p>
+                    </div>
+                    <label class="switch" for="darkModeToggle">
+                        <input type="checkbox" id="darkModeToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <form method="post" action="{% url 'change_password' %}">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label class="form-label">Current Password</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" class="form-input" name="current_password" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">New Password</label>
+                            <div class="input-with-icon">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" class="form-input" name="new_password" required minlength="8">
+                            </div>
+                            <small class="form-help">Minimum 8 characters</small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Confirm New Password</label>
+                            <div class="input-with-icon">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" class="form-input" name="confirm_password" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Update Password</button>
+                    </div>
+                </form>
+
+                <hr style="margin: 2rem 0;">
+
+                <h3>Delete Account</h3>
+                <div class="danger-zone">
+                    <div>
+                        <strong class="danger-zone-title">Permanently delete your account</strong>
+                        <p style="margin: 0; font-size: 0.9rem; color: var(--gray-color);">Type DELETE to confirm. This action cannot be undone.</p>
+                    </div>
+                    <form method="POST" action="{% url 'delete_account' %}" onsubmit="const v=(this.delete_confirmation.value || '').trim().toUpperCase(); if(v !== 'DELETE'){ alert('Please type DELETE to confirm account deletion.'); return false; } return confirm('Are you sure you want to permanently delete your account? This action cannot be undone.');" class="danger-zone-form">
+                        {% csrf_token %}
+                        <input type="text" name="delete_confirmation" placeholder="Type DELETE" aria-label="Type DELETE to confirm" required class="danger-zone-input">
+                        <button type="submit" class="btn danger-zone-button">Delete Account</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Activity Tab -->
+            <div class="tab-content" id="tab-activity">
+                <h2>Recent Activity</h2>
+                
+                <div class="activity-list">
+                    {% for activity in recent_activity %}
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="fas {{ activity.icon|default:'fa-history' }}"></i>
+                        </div>
+                        <div>
+                            <p><strong>{{ activity.title }}</strong>{% if activity.description %} {{ activity.description }}{% endif %}</p>
+                            <small style="color: var(--gray-color);">{{ activity.timestamp|timesince }} ago</small>
+                        </div>
+                        {% if activity.badge_text %}
+                        <span class="badge badge-{{ activity.badge_class|default:'info' }}" style="margin-left: auto;">{{ activity.badge_text }}</span>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="fas fa-inbox"></i>
+                        </div>
+                        <div>
+                            <p><strong>No recent activity yet</strong></p>
+                            <small style="color: var(--gray-color);">Your profile activity will appear here once you start using the platform.</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Admin Panel Tab (Only visible to admins) -->
+            {% if user.is_admin_approved %}
+            <div class="tab-content" id="tab-admin">
+                <h2>Admin Quick Access</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <a href="{% url 'admin_dashboard' %}" class="action-card">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Admin Dashboard</span>
+                    </a>
+                    <a href="{% url 'admin_users' %}" class="action-card">
+                        <i class="fas fa-users"></i>
+                        <span>Manage Users</span>
+                    </a>
+                    <a href="{% url 'admin_items' %}" class="action-card">
+                        <i class="fas fa-box"></i>
+                        <span>Manage Items</span>
+                    </a>
+                    <a href="{% url 'admin_bookings' %}" class="action-card">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Manage Bookings</span>
+                    </a>
+                    <a href="{% url 'admin_reports' %}" class="action-card">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Reports</span>
+                    </a>
+                    <a href="{% url 'admin_settings' %}" class="action-card">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <a href="{% url 'index' %}" class="logo" style="color: white;">
+                        <i class="fas fa-link"></i> Knot
+                    </a>
+                    <p>Tying Communities Together Through Shared Resources</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Knot. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/app.js' %}"></script>
+    <script>
+        const activateProfileTab = (tabName) => {
+            document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            const tabButton = document.querySelector(`.profile-tab[data-tab="${tabName}"]`);
+            const tabContent = document.getElementById(`tab-${tabName}`);
+            if (tabButton && tabContent) {
+                tabButton.classList.add('active');
+                tabContent.classList.add('active');
+            }
+        };
+
+        // Mobile menu toggle
+        document.getElementById('hamburger').addEventListener('click', function() {
+            document.querySelector('.nav-menu').classList.toggle('active');
+        });
+
+        // Tab switching
+        document.querySelectorAll('.profile-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                activateProfileTab(tabId);
+            });
+        });
+
+        const changeAvatarBtn = document.getElementById('changeAvatarBtn');
+        const avatarInput = document.getElementById('avatarInput');
+        const avatarFileHelp = document.getElementById('avatarFileHelp');
+
+        if (changeAvatarBtn && avatarInput) {
+            changeAvatarBtn.addEventListener('click', function() {
+                activateProfileTab('edit');
+                avatarInput.click();
+            });
+        }
+
+        // Avatar upload preview
+        avatarInput.addEventListener('change', function(e) {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.querySelector('.profile-avatar img').src = e.target.result;
+                }
+                reader.readAsDataURL(this.files[0]);
+                if (avatarFileHelp) {
+                    avatarFileHelp.textContent = `Selected: ${this.files[0].name}`;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

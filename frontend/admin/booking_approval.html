@@ -1,0 +1,329 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Booking - Knot Admin</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar admin-navbar">
+        <div class="container nav-container">
+            <a href="{% url 'admin_dashboard' %}" class="logo"><i class="fas fa-link"></i> Knot Admin</a>
+            <ul class="nav-menu">
+                <li><a href="{% url 'admin_dashboard' %}"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="{% url 'admin_users' %}"><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="{% url 'admin_items' %}"><i class="fas fa-box"></i> Items</a></li>
+                <li><a href="{% url 'admin_suggestions' %}"><i class="fas fa-lightbulb"></i> Suggestions</a></li>
+                <li><a href="{% url 'admin_bookings' %}" class="active"><i class="fas fa-calendar-check"></i> Bookings</a></li>
+                <li><a href="{% url 'admin_request_list' %}"><i class="fas fa-user-shield"></i> Requests</a></li>
+                <li><a href="{% url 'admin_reports' %}"><i class="fas fa-chart-bar"></i> Reports</a></li>
+                <li class="auth-buttons">
+                    <div class="admin-user-dropdown">
+                        <button type="button" class="admin-user-toggle admin-user-pill" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-user-shield"></i>
+                            <span>{{ user.username }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="admin-dropdown-menu">
+                            <a href="{% url 'user_dashboard' %}" class="admin-user-action-link">
+                                <i class="fas fa-user"></i>
+                                <span>Switch to Member Panel</span>
+                            </a>
+                            <a href="{% url 'logout' %}" class="admin-user-action-link danger">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                            </a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+            <button class="hamburger" id="hamburger">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container" style="padding: 2rem 0;">
+        <div class="admin-panel" style="max-width: 900px; margin: 0 auto;">
+            {% if messages %}
+            <div style="margin-bottom: 1rem;">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}" style="margin-bottom: 0.6rem;">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h2><i class="fas fa-gavel"></i> Booking Review</h2>
+                <a href="/accounts/bookings/" class="btn btn-outline">Back to Bookings</a>
+            </div>
+
+            <div class="card" style="margin-bottom: 1rem;">
+                <div class="card-header"><h3>Request Details</h3></div>
+                <div style="padding:1rem;">
+                    <p><strong>Booking ID:</strong> {{ booking.booking_id }}</p>
+                    <p><strong>Item:</strong> {{ booking.item.name }}</p>
+                    <p><strong>Borrower:</strong> {{ booking.borrower.get_full_name|default:booking.borrower.username }}</p>
+                    <p><strong>Dates:</strong> {{ booking.start_date|date:"M d, Y" }} - {{ booking.end_date|date:"M d, Y" }}</p>
+                    <p><strong>Reason for booking:</strong> {{ booking.purpose|default:"No reason provided" }}</p>
+                    <p><strong>Status:</strong> {{ booking.get_status_display }}</p>
+                    <p><strong>Total Fee:</strong> Ksh {{ booking.total_fee|default:"Not set" }}</p>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 1rem;">
+                <div class="card-header"><h3>Borrower ID Photo</h3></div>
+                <div style="padding:1rem;">
+                    {% if booking.borrower_id_photo %}
+                    <a href="{{ booking.borrower_id_photo.url }}" target="_blank" rel="noopener" style="display:inline-block; margin-bottom:0.75rem;">
+                        <img
+                            src="{{ booking.borrower_id_photo.url }}"
+                            alt="Borrower ID photo"
+                            style="width: 260px; max-width: 100%; height: auto; border-radius: 10px; border: 1px solid #cbd5e0;"
+                        >
+                    </a>
+                    <p style="margin:0;">
+                        <a href="{{ booking.borrower_id_photo.url }}" target="_blank" rel="noopener" class="btn btn-outline">
+                            <i class="fas fa-eye"></i> Open Full ID Photo
+                        </a>
+                    </p>
+                    {% else %}
+                    <p style="margin:0; color: var(--danger-color); font-weight:600;">No ID photo was submitted with this booking request.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 1rem;">
+                <div class="card-header"><h3><i class="fas fa-comments"></i> Pickup Chat</h3></div>
+                <div style="padding:1rem;">
+                    <div id="adminPickupChatMessages" style="border:1px solid #e2e8f0; border-radius:10px; max-height:280px; overflow-y:auto; padding:0.75rem; background:#f8fafc; margin-bottom:0.85rem;">
+                        {% for chat_message in booking_chat_messages %}
+                        {% if chat_message.sender_id == user.id %}
+                        <div style="display:flex; justify-content:flex-end; margin-bottom:0.55rem;">
+                            <div style="width:30px; height:30px; border-radius:50%; background:#2c7a7b; color:white; display:flex; align-items:center; justify-content:center; font-size:0.72rem; font-weight:700; margin:0 0 0 0.5rem; flex-shrink:0; order:2;">
+                                {{ chat_message.sender.username|slice:":1"|upper }}
+                            </div>
+                            <div style="max-width:84%; background:#e6fffa; border:1px solid #81e6d9; border-radius:12px; padding:0.55rem 0.7rem;">
+                                <div style="font-size:0.78rem; color:#4a5568; font-weight:600; margin-bottom:0.15rem;">{{ chat_message.sender.username }}</div>
+                                <div style="white-space: pre-wrap; line-height:1.45;">{{ chat_message.content }}</div>
+                                <div style="font-size:0.72rem; color:#718096; margin-top:0.25rem;" title="{{ chat_message.created_at|date:'M d, Y g:i A' }}">{{ chat_message.created_at|timesince }} ago</div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div style="display:flex; justify-content:flex-start; margin-bottom:0.55rem;">
+                            <div style="width:30px; height:30px; border-radius:50%; background:#4a5568; color:white; display:flex; align-items:center; justify-content:center; font-size:0.72rem; font-weight:700; margin:0 0.5rem 0 0; flex-shrink:0;">
+                                {{ chat_message.sender.username|slice:":1"|upper }}
+                            </div>
+                            <div style="max-width:84%; background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:0.55rem 0.7rem;">
+                                <div style="font-size:0.78rem; color:#4a5568; font-weight:600; margin-bottom:0.15rem;">{{ chat_message.sender.username }}</div>
+                                <div style="white-space: pre-wrap; line-height:1.45;">{{ chat_message.content }}</div>
+                                <div style="font-size:0.72rem; color:#718096; margin-top:0.25rem;" title="{{ chat_message.created_at|date:'M d, Y g:i A' }}">{{ chat_message.created_at|timesince }} ago</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% empty %}
+                        <p style="margin:0; color:#718096; text-align:center;">No messages yet for this booking.</p>
+                        {% endfor %}
+                    </div>
+
+                    <form id="adminPickupChatForm" method="post" action="{% url 'booking_chat_send' booking.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="/accounts/bookings/review/{{ booking.id }}/">
+                        <div class="form-group" style="margin-bottom:0.7rem;">
+                            <label for="adminChatPreferredDate">Proposed Pickup Date (optional)</label>
+                            <input id="adminChatPreferredDate" type="date" name="preferred_pickup_date" class="form-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0.7rem;">
+                            <label for="adminChatPreferredTime">Proposed Pickup Time (optional)</label>
+                            <input id="adminChatPreferredTime" type="time" name="preferred_pickup_time" class="form-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0.8rem;">
+                            <label for="adminChatMessage">Reply to Borrower</label>
+                            <textarea id="adminChatMessage" name="message" class="form-textarea" rows="3" placeholder="Send a quick chat reply..." required></textarea>
+                            <small id="adminTypingHint" style="display:none; color:#718096;">Typing...</small>
+                        </div>
+                        <button type="submit" class="btn btn-outline"><i class="fas fa-paper-plane"></i> Send Chat Message</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 1rem;">
+                <div class="card-header"><h3>Reviews For This Booking</h3></div>
+                <div style="padding:1rem; display:grid; gap:0.75rem;">
+                    {% for review in booking_reviews %}
+                    <div style="border-bottom:1px solid #e2e8f0; padding-bottom:0.75rem;">
+                        <p style="margin:0;"><strong>{{ review.reviewer.username }}</strong> → {{ review.reviewee.username }}</p>
+                        <p style="margin:0.25rem 0; color:#4a5568;">Rating: {{ review.rating }}/5 • {{ review.get_review_type_display }}</p>
+                        <p style="margin:0.25rem 0 0; color:#2d3748;">{{ review.comment }}</p>
+                    </div>
+                    {% empty %}
+                    <p style="margin:0; color:#718096;">No reviews have been submitted for this booking yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 1rem;">
+                <div class="card-header"><h3>Recent Reviews For This Item</h3></div>
+                <div style="padding:1rem;">
+                    <p style="margin:0 0 0.75rem; color:#4a5568;">Average rating: {{ item_rating_avg }}/5</p>
+                    <div style="display:grid; gap:0.75rem;">
+                        {% for review in item_reviews %}
+                        <div style="border-bottom:1px solid #e2e8f0; padding-bottom:0.75rem;">
+                            <p style="margin:0;"><strong>{{ review.reviewer.username }}</strong> rated {{ review.rating }}/5</p>
+                            <p style="margin:0.25rem 0 0; color:#2d3748;">{{ review.comment }}</p>
+                        </div>
+                        {% empty %}
+                        <p style="margin:0; color:#718096;">No item reviews yet.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            {% if booking.status == 'pending' and booking.borrower_id_photo %}
+            <div class="card" style="margin-bottom: 1rem;">
+                <div class="card-header"><h3>Approve Request</h3></div>
+                <div style="padding:1rem;">
+                    <form method="post" action="/accounts/bookings/approve/{{ booking.id }}/">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label>Pickup Date *</label>
+                            <input
+                                type="date"
+                                name="pickup_date"
+                                class="form-input"
+                                min="{{ today|date:'Y-m-d' }}"
+                                max="{{ booking.start_date|date:'Y-m-d' }}"
+                                value="{{ booking.start_date|date:'Y-m-d' }}"
+                                required
+                            >
+                            <small style="display:block; margin-top:0.4rem; color:#718096;">
+                                Pickup date must be between today and the member's requested start date.
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label>Pickup Time *</label>
+                            <input type="time" name="pickup_time" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Pickup Location *</label>
+                            <textarea name="pickup_location" class="form-textarea" rows="3" required>{{ booking.item.location_details }}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Approval Notes</label>
+                            <textarea name="notes" class="form-textarea" rows="3" placeholder="Instructions for borrower"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Approve Booking</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3>Decline Request</h3></div>
+                <div style="padding:1rem;">
+                    <form method="post" action="/accounts/bookings/reject/{{ booking.id }}/">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label>Reason for Decline (optional)</label>
+                            <textarea name="notes" class="form-textarea" rows="3" placeholder="Provide a reason for the borrower"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-danger"><i class="fas fa-times"></i> Decline Booking</button>
+                    </form>
+                </div>
+            </div>
+            {% elif booking.status == 'pending' and not booking.borrower_id_photo %}
+            <div class="card">
+                <div style="padding:1rem; color: var(--danger-color); font-weight:600;">
+                    This booking cannot be approved until the borrower submits an ID photo.
+                </div>
+            </div>
+            {% else %}
+            <div class="card">
+                <div style="padding:1rem; color:#4a5568;">
+                    This booking is already processed and can no longer be approved/declined from this page.
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+        (function() {
+            const chatContainer = document.getElementById('adminPickupChatMessages');
+            const chatForm = document.getElementById('adminPickupChatForm');
+            const chatInput = document.getElementById('adminChatMessage');
+            const typingHint = document.getElementById('adminTypingHint');
+            if (!chatContainer || !chatForm || !chatInput) {
+                return;
+            }
+
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            let typingTimer = null;
+            chatInput.addEventListener('input', function() {
+                if (typingHint) {
+                    typingHint.style.display = chatInput.value.trim() ? 'block' : 'none';
+                    if (typingTimer) {
+                        clearTimeout(typingTimer);
+                    }
+                    typingTimer = setTimeout(function() {
+                        typingHint.style.display = 'none';
+                    }, 1400);
+                }
+            });
+
+            chatInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    chatForm.requestSubmit();
+                }
+            });
+
+            let refreshTimer = null;
+            function poll() {
+                const currentUrl = window.location.href;
+                fetch(currentUrl, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then((response) => response.text())
+                .then((htmlText) => {
+                    const parser = new DOMParser();
+                    const nextDoc = parser.parseFromString(htmlText, 'text/html');
+                    const nextChat = nextDoc.getElementById('adminPickupChatMessages');
+                    if (!nextChat) {
+                        return;
+                    }
+                    const currentHtml = chatContainer.innerHTML.trim();
+                    const nextHtml = nextChat.innerHTML.trim();
+                    if (nextHtml !== currentHtml) {
+                        chatContainer.innerHTML = nextHtml;
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                    }
+                })
+                .catch(() => {
+                    // Silent polling failure for informal chat UX.
+                });
+            }
+
+            refreshTimer = setInterval(poll, 7000);
+            window.addEventListener('beforeunload', function() {
+                if (refreshTimer) {
+                    clearInterval(refreshTimer);
+                }
+            });
+        })();
+    </script>
+    <script src="{% static 'js/admin.js' %}"></script>
+
+    <script src="{% static 'js/admin-dropdown.js' %}"></script>
+</body>
+</html>
+
+

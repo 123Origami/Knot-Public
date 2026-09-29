@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: knot-project
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt && python backend/manage.py collectstatic --noinput && python backend/manage.py migrate"
+    startCommand: "gunicorn backend.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.2
+      - key: PYTHONPATH
+        value: .
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "False"
+      # Portfolio demo: let reviewers sign up and use the site immediately
+      # instead of needing a real, deliverable verification email.
+      - key: REQUIRE_EMAIL_VERIFICATION
+        value: "False"
+      # Set this to your live https://<app>.onrender.com URL after the first
+      # deploy (needed so verification emails and payment callback links
+      # point at the real site instead of localhost). Redeploy after setting it.
+      - key: NGROK_URL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: PAYHERO_USERNAME
+        sync: false
+      - key: PAYHERO_API_KEY
+        sync: false
+      - key: PAYHERO_API_SECRET
+        sync: false
+      - key: PAYHERO_WEBHOOK_SECRET
+        sync: false
+      - key: PAYHERO_ACCOUNT_NUMBER
+        sync: false
+      - key: PAYHERO_CHANNEL_ID
+        sync: false

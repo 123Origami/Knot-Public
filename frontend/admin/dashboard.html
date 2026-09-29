@@ -1,0 +1,682 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Knot</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Additional admin-specific styles */
+        .admin-stats-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .admin-nav-tabs {
+            display: flex;
+            gap: 0.5rem;
+            background: white;
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .admin-nav-tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .admin-nav-tab:hover {
+            background: var(--primary-light);
+        }
+        
+        .admin-nav-tab.active {
+            background: var(--primary-color);
+            color: var(--dark-color);
+        }
+        
+        .admin-nav-tab.small {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .admin-tab-content {
+            display: block;
+            margin-bottom: 1.5rem;
+        }
+        
+        .admin-tab-content.active {
+            display: block;
+        }
+        
+        .admin-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .admin-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        
+        .admin-card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--light-gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .admin-card-header h3 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .admin-card-body {
+            padding: 1.5rem;
+        }
+        
+        .admin-card-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .activity-item-link {
+            text-decoration: none;
+            color: inherit;
+            border-radius: var(--border-radius);
+            padding: 0.5rem;
+            transition: var(--transition);
+        }
+
+        .activity-item-link:hover {
+            background: var(--primary-light);
+        }
+        
+        .activity-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .activity-icon.success {
+            background: rgba(104, 211, 145, 0.2);
+            color: var(--success-color);
+        }
+        
+        .activity-icon.info {
+            background: rgba(90, 103, 216, 0.2);
+            color: var(--secondary-color);
+        }
+        
+        .activity-icon.warning {
+            background: rgba(246, 173, 85, 0.2);
+            color: var(--warning-color);
+        }
+        
+        .activity-icon.primary {
+            background: rgba(255, 235, 243, 0.5);
+            color: var(--primary-dark);
+        }
+        
+        .activity-content p {
+            margin: 0;
+        }
+        
+        .activity-content small {
+            color: var(--gray-color);
+        }
+        
+        .pending-list {
+            margin-bottom: 1rem;
+        }
+        
+        .pending-item {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        
+        .pending-item:last-child {
+            border-bottom: none;
+        }
+        
+        .pending-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .pending-user {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .view-all-link {
+            display: block;
+            text-align: center;
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .system-status {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .status-label {
+            flex: 1;
+            font-weight: 500;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        
+        .status-indicator.online {
+            background: var(--success-color);
+        }
+        
+        .status-indicator.warning {
+            background: var(--warning-color);
+        }
+        
+        .status-indicator.offline {
+            background: var(--danger-color);
+        }
+        
+        .status-text {
+            width: 80px;
+            text-align: right;
+            color: var(--gray-color);
+        }
+        
+        .storage-warning {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: rgba(246, 173, 85, 0.1);
+            border-radius: var(--border-radius);
+            color: var(--warning-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .admin-filters {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        .date-range {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .date-range input {
+            width: 140px;
+        }
+        
+        .reports-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .report-chart {
+            background: var(--primary-light);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+        }
+        
+        .chart-placeholder {
+            height: 200px;
+            background: white;
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray-color);
+            margin-top: 1rem;
+        }
+        
+        .settings-tabs {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--primary-light);
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .settings-tab {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        .settings-tab:hover {
+            background: white;
+        }
+        
+        .settings-tab.active {
+            background: white;
+            box-shadow: var(--shadow);
+        }
+        
+        .settings-form {
+            max-width: 600px;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .table-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: var(--primary-light);
+            color: var(--dark-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+        
+        .btn-icon:hover {
+            background: var(--primary-color);
+        }
+        
+        .btn-icon.success {
+            color: var(--success-color);
+        }
+        
+        .btn-icon.danger {
+            color: var(--danger-color);
+        }
+        
+        .btn-icon.success:hover {
+            background: rgba(104, 211, 145, 0.2);
+        }
+        
+        .btn-icon.danger:hover {
+            background: rgba(252, 129, 129, 0.2);
+        }
+        
+        .search-input {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--light-gray);
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .admin-stats-dashboard {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .admin-cards-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .reports-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .admin-nav-tabs {
+                flex-direction: column;
+            }
+            
+            .admin-nav-tab {
+                width: 100%;
+            }
+        }
+
+        /* Targeted fix for the Switch to Member link */
+.admin-user-action-link {
+    color: #000000 !important; /* Pure black */
+    font-weight: 600; /* Making it slightly bolder helps it look "darker" */
+}
+
+.admin-user-action-link i {
+    color: #000000 !important; /* Ensures the icon darkens too */
+}
+
+/* Optional: Add a hover effect so the user knows it's clickable */
+.admin-user-action-link:hover {
+    color: #be185d !important; /* Switches to your primary burgundy on hover */
+}
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar admin-navbar">
+        <div class="container nav-container">
+            <a href="{% url 'admin_dashboard' %}" class="logo">
+                <i class="fas fa-link"></i> Knot Admin
+            </a>
+            <ul class="nav-menu">
+                    <li><a href="{% url 'admin_dashboard' %}" {% if request.resolver_match.url_name == 'admin_dashboard' %}class="active"{% endif %}><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                    <li><a href="{% url 'admin_users' %}" {% if request.resolver_match.url_name == 'admin_users' %}class="active"{% endif %}><i class="fas fa-users"></i> Users</a></li>
+                    <li><a href="{% url 'admin_items' %}" {% if request.resolver_match.url_name == 'admin_items' %}class="active"{% endif %}><i class="fas fa-box"></i> Items</a></li>
+                    <li><a href="{% url 'admin_suggestions' %}" {% if request.resolver_match.url_name == 'admin_suggestions' %}class="active"{% endif %}><i class="fas fa-lightbulb"></i> Suggestions</a></li>
+                    <li><a href="{% url 'admin_bookings' %}" {% if request.resolver_match.url_name == 'admin_bookings' %}class="active"{% endif %}><i class="fas fa-calendar-check"></i> Bookings</a></li>
+                    <li><a href="{% url 'admin_request_list' %}" {% if request.resolver_match.url_name == 'admin_request_list' %}class="active"{% endif %}><i class="fas fa-user-shield"></i> Requests</a></li>
+                    <li><a href="{% url 'admin_reports' %}" {% if request.resolver_match.url_name == 'admin_reports' %}class="active"{% endif %}><i class="fas fa-chart-bar"></i> Reports</a></li>
+                    <li class="auth-buttons">
+                        <div class="admin-user-dropdown">
+                            <button type="button" class="admin-user-toggle admin-user-pill" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-user-shield"></i>
+                                <span>{{ user.username }}</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="admin-dropdown-menu">
+                                <a href="{% url 'user_dashboard' %}" class="admin-user-action-link">
+                                    <i class="fas fa-user"></i>
+                                    <span>Switch to Member Panel</span>
+                                </a>
+                                <a href="{% url 'logout' %}" class="admin-user-action-link danger">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Logout</span>
+                                </a>
+                            </div>
+                        </div>
+                    </li>
+            </ul>
+            <button class="hamburger" id="hamburger">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+    <div class="admin-nav-overlay" id="adminNavOverlay"></div>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1><i class="fas fa-user-shield"></i> Admin Dashboard</h1>
+            <p>Manage users, campaigns, and monitor community activity</p>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <section class="dashboard">
+        <div class="container">
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Admin Stats Overview -->
+            <div class="admin-stats-dashboard">
+                <div class="stat-card">
+                    <div class="stat-number">{{ total_users|default:"0" }}</div>
+                    <div class="stat-label">Total Users</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ pending_users|default:"0" }}</div>
+                    <div class="stat-label">Pending Approval</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ active_borrowings|default:"0" }}</div>
+                    <div class="stat-label">Active Borrowings</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ pending_campaigns|default:"0" }}</div>
+                    <div class="stat-label">Pending Campaigns</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ total_items|default:"0" }}</div>
+                    <div class="stat-label">Total Items</div>
+                </div>
+            
+            </div>
+
+            <!-- Admin Content Area -->
+            <div class="admin-content">
+                <!-- Overview Tab -->
+                <div class="admin-tab-content active" id="tab-overview">
+                    <div class="admin-cards-grid">
+                        <!-- Recent Activity -->
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h3><i class="fas fa-history"></i> Recent Activity</h3>
+                            </div>
+                            <div class="admin-card-body">
+                                <div class="activity-list">
+                                    {% for activity in recent_activity %}
+                                        {% if activity.url %}
+                                        <a href="{{ activity.url }}" class="activity-item activity-item-link">
+                                            <div class="activity-icon {{ activity.type }}">
+                                                <i class="fas fa-{{ activity.icon }}"></i>
+                                            </div>
+                                            <div class="activity-content">
+                                                <p>{{ activity.description }}</p>
+                                                <small>{{ activity.timestamp|timesince }} ago</small>
+                                            </div>
+                                        </a>
+                                        {% else %}
+                                        <div class="activity-item">
+                                            <div class="activity-icon {{ activity.type }}">
+                                                <i class="fas fa-{{ activity.icon }}"></i>
+                                            </div>
+                                            <div class="activity-content">
+                                                <p>{{ activity.description }}</p>
+                                                <small>{{ activity.timestamp|timesince }} ago</small>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    {% empty %}
+                                        <p class="text-muted">No recent activity</p>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pending Approvals -->
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h3><i class="fas fa-clock"></i> Bookings</h3>
+                                <span class="badge badge-warning">{{ pending_approvals_count|default:"0" }}</span>
+                            </div>
+                            <div class="admin-card-body">
+                                <div class="pending-list">
+                                    {% for request in pending_admin_requests %}
+                                        <div class="pending-item">
+                                            <div class="pending-info">
+                                                <div class="pending-user">
+                                                    <i class="fas fa-user-circle" style="font-size: 2rem;"></i>
+                                                    <div>
+                                                        <strong>{{ request.username }}</strong><br>
+                                                        <small>Admin Request</small>
+                                                    </div>
+                                                </div>
+                                                <a href="{% url 'admin_request_list' %}" class="btn btn-small btn-primary">Review</a>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                    
+                                    {% for booking in pending_bookings_list %}
+                                        <div class="pending-item">
+                                            <div class="pending-info">
+                                                <div class="pending-user">
+                                                    <i class="fas fa-calendar-check" style="font-size: 2rem;"></i>
+                                                    <div>
+                                                        <strong>{{ booking.item.name }}</strong><br>
+                                                        <small>Booking by {{ booking.borrower.username }}</small>
+                                                    </div>
+                                                </div>
+                                                <a href="{% url 'admin_bookings' %}" class="btn btn-small btn-primary">Review</a>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                <a href="{% url 'admin_bookings' %}" class="view-all-link">View All Pending</a>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                            </div>
+                            <div class="admin-card-body">
+                                <div class="quick-actions">
+                                    <a href="{% url 'admin_reports' %}" class="action-card">
+                                        <i class="fas fa-chart-bar"></i>
+                                        <span>Generate Report</span>
+                                    </a>
+                                    <a href="{% url 'admin_request_list' %}" class="action-card">
+                                        <i class="fas fa-clock"></i>
+                                        <span>Pending Approvals</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <a href="{% url 'admin_dashboard' %}" class="logo" style="color: white;">
+                        <i class="fas fa-link"></i> Knot
+                    </a>
+                    <p>Tying Communities Together Through Shared Resources</p>
+                    <div class="social-links">
+                        <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook"></i></a>
+                        <a href="https://www.twitter.com" target="_blank" rel="noopener noreferrer"><i class="fab fa-twitter"></i></a>
+                        <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Knot. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        const hamburger = document.getElementById('hamburger');
+        const navMenu = document.querySelector('.nav-menu');
+        const navOverlay = document.getElementById('adminNavOverlay');
+
+        function closeMobileMenu() {
+            navMenu.classList.remove('active');
+            navOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+            hamburger.setAttribute('aria-expanded', 'false');
+        }
+
+        hamburger.setAttribute('aria-expanded', 'false');
+        hamburger.addEventListener('click', function() {
+            const isOpen = navMenu.classList.toggle('active');
+            navOverlay.classList.toggle('active', isOpen);
+            document.body.style.overflow = isOpen ? 'hidden' : '';
+            hamburger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+
+        navOverlay.addEventListener('click', closeMobileMenu);
+
+        document.querySelectorAll('.nav-menu a').forEach((link) => {
+            link.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    closeMobileMenu();
+                }
+            });
+        });
+
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                closeMobileMenu();
+            }
+        });
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && navMenu.classList.contains('active')) {
+                closeMobileMenu();
+            }
+        });
+
+    </script>
+    <script src="{% static 'js/admin.js' %}"></script>
+    <script src="{% static 'js/admin-dropdown.js' %}"></script>
+    </body>
+</html>

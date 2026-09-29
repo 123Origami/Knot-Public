@@ -1,0 +1,633 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Knot Admin</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .settings-sidebar {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            box-shadow: var(--shadow);
+        }
+        .settings-nav-item {
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .settings-nav-item:hover {
+            background: var(--primary-light);
+        }
+        .settings-nav-item.active {
+            background: var(--primary-color);
+            color: var(--dark-color);
+        }
+        .settings-content {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+        }
+        .settings-section {
+            display: none;
+        }
+        .settings-section.active {
+            display: block;
+        }
+        .api-key {
+            background: var(--primary-light);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            font-family: monospace;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar admin-navbar">
+        <div class="container nav-container">
+            <a href="{% url 'admin_dashboard' %}" class="logo">
+                <i class="fas fa-link"></i> Knot Admin
+            </a>
+            <ul class="nav-menu">
+                <li><a href="{% url 'admin_dashboard' %}" {% if request.resolver_match.url_name == 'admin_dashboard' %}class="active"{% endif %}><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="{% url 'admin_users' %}" {% if request.resolver_match.url_name == 'admin_users' %}class="active"{% endif %}><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="{% url 'admin_items' %}" {% if request.resolver_match.url_name == 'admin_items' %}class="active"{% endif %}><i class="fas fa-box"></i> Items</a></li>
+                <li><a href="{% url 'admin_suggestions' %}" {% if request.resolver_match.url_name == 'admin_suggestions' %}class="active"{% endif %}><i class="fas fa-lightbulb"></i> Suggestions</a></li>
+                <li><a href="{% url 'admin_bookings' %}" {% if request.resolver_match.url_name == 'admin_bookings' %}class="active"{% endif %}><i class="fas fa-calendar-check"></i> Bookings</a></li>
+                <li><a href="{% url 'admin_request_list' %}" {% if request.resolver_match.url_name == 'admin_request_list' %}class="active"{% endif %}><i class="fas fa-user-shield"></i> Requests</a></li>
+                <li><a href="{% url 'admin_reports' %}" {% if request.resolver_match.url_name == 'admin_reports' %}class="active"{% endif %}><i class="fas fa-chart-bar"></i> Reports</a></li>
+                <li class="auth-buttons">
+                    <div class="admin-user-dropdown">
+                        <button type="button" class="admin-user-toggle admin-user-pill" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-user-shield"></i>
+                            <span>{{ user.username }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="admin-dropdown-menu">
+                            <a href="{% url 'user_dashboard' %}" class="admin-user-action-link">
+                                <i class="fas fa-user"></i>
+                                <span>Switch to Member Panel</span>
+                            </a>
+                            <a href="{% url 'logout' %}" class="admin-user-action-link danger">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                            </a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+            <button class="hamburger" id="hamburger">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1><i class="fas fa-cog"></i> Admin Settings</h1>
+            <p>Configure platform settings and preferences</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <section class="dashboard">
+        <div class="container">
+            <div style="display: grid; grid-template-columns: 250px 1fr; gap: 2rem;">
+                <!-- Settings Navigation -->
+                <div class="settings-sidebar">
+                    <div class="settings-nav-item active" data-section="general">
+                        <i class="fas fa-globe"></i> General
+                    </div>
+                    <div class="settings-nav-item" data-section="security">
+                        <i class="fas fa-shield-alt"></i> Security
+                    </div>
+                    <div class="settings-nav-item" data-section="email">
+                        <i class="fas fa-envelope"></i> Email
+                    </div>
+                    <div class="settings-nav-item" data-section="payments">
+                        <i class="fas fa-credit-card"></i> Payments
+                    </div>
+                    <div class="settings-nav-item" data-section="notifications">
+                        <i class="fas fa-bell"></i> Notifications
+                    </div>
+                    <div class="settings-nav-item" data-section="api">
+                        <i class="fas fa-code"></i> API
+                    </div>
+                    <div class="settings-nav-item" data-section="backup">
+                        <i class="fas fa-database"></i> Backup
+                    </div>
+                    <div class="settings-nav-item" data-section="audit">
+                        <i class="fas fa-history"></i> Audit Log
+                    </div>
+                </div>
+
+                <!-- Settings Content -->
+                <div class="settings-content">
+                    <!-- General Settings -->
+                    <div class="settings-section active" id="general">
+                        <h2>General Settings</h2>
+                        <div class="stats-grid" style="margin-bottom: 1.5rem;">
+                            <div class="stat-card">
+                                <div class="stat-number">{{ total_users }}</div>
+                                <div class="stat-label">Registered Users</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ total_items }}</div>
+                                <div class="stat-label">Active Items</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ total_bookings }}</div>
+                                <div class="stat-label">Bookings</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ site_domain }}</div>
+                                <div class="stat-label">Site Domain</div>
+                            </div>
+                        </div>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="general">
+                            <div class="form-group">
+                                <label class="form-label">Site Name</label>
+                                <input type="text" name="site_name" class="form-input" value="{{ site_settings.site_name }}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Tagline</label>
+                                <textarea name="tagline" class="form-textarea">{{ site_settings.tagline }}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Site Domain</label>
+                                <input type="text" class="form-input" value="{{ site_domain }}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Community Status</label>
+                                <input type="text" class="form-input" value="{% if maintenance_mode %}Maintenance mode is on{% else %}Public access is enabled{% endif %}" readonly>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Security Settings -->
+                    <div class="settings-section" id="security">
+                        <h2>Security Settings</h2>
+                        <div class="stats-grid" style="margin-bottom: 1.5rem;">
+                            <div class="stat-card">
+                                <div class="stat-number">{{ session_timeout_minutes }}m</div>
+                                <div class="stat-label">Session Timeout</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ unread_notifications }}</div>
+                                <div class="stat-label">Unread Alerts</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{% if maintenance_mode %}On{% else %}Off{% endif %}</div>
+                                <div class="stat-label">Maintenance</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">5</div>
+                                <div class="stat-label">Login Attempts</div>
+                            </div>
+                        </div>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="security">
+                            <div class="form-group">
+                                <label class="form-label">Session Timeout (minutes)</label>
+                                <input type="number" class="form-input" value="{{ session_timeout_minutes }}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Maintenance Message</label>
+                                <textarea name="maintenance_message" class="form-textarea">{{ site_settings.maintenance_message }}</textarea>
+                            </div>
+                            <div class="form-checkbox">
+                                <input type="checkbox" id="maintenance_mode" name="maintenance_mode" {% if maintenance_mode %}checked{% endif %}>
+                                <label for="maintenance_mode">Maintenance Mode</label>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Email Settings -->
+                    <div class="settings-section" id="email">
+                        <h2>Email Settings</h2>
+                        <div class="stats-grid" style="margin-bottom: 1.5rem;">
+                            <div class="stat-card">
+                                <div class="stat-number">{{ email_host }}</div>
+                                <div class="stat-label">SMTP Host</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ email_port }}</div>
+                                <div class="stat-label">SMTP Port</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ email_user }}</div>
+                                <div class="stat-label">SMTP User</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ email_password_masked }}</div>
+                                <div class="stat-label">Password</div>
+                            </div>
+                        </div>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="email">
+                            <div class="form-group">
+                                <label class="form-label">Contact Email</label>
+                                <input type="email" name="contact_email" class="form-input" value="{{ site_settings.contact_email|default:email_from }}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Support Email</label>
+                                <input type="email" name="support_email" class="form-input" value="{{ site_settings.support_email }}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">From Email</label>
+                                <input type="email" class="form-input" value="{{ email_from }}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">SMTP Host</label>
+                                <input type="text" class="form-input" value="{{ email_host }}" readonly>
+                            </div>
+                            <p style="color: var(--gray-color); margin-top: 1rem;">SMTP credentials are loaded from the server environment. Update contact and support addresses here.</p>
+                            <div class="form-actions" style="margin-top: 1rem;">
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Payments Settings -->
+                    <div class="settings-section" id="payments">
+                        <h2>Payments Settings</h2>
+                        <div class="stats-grid" style="margin-bottom: 1.5rem;">
+                            <div class="stat-card">
+                                <div class="stat-number">{{ total_transactions }}</div>
+                                <div class="stat-label">Transactions</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ completed_transactions }}</div>
+                                <div class="stat-label">Completed</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">Ksh {{ total_contributions }}</div>
+                                <div class="stat-label">Contributions</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{% if payhero_test_mode %}Test{% else %}Live{% endif %}</div>
+                                <div class="stat-label">Gateway Mode</div>
+                            </div>
+                        </div>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="payments">
+                            <div class="form-group">
+                                <label class="form-label">Payhero Username</label>
+                                <input type="text" class="form-input" value="{{ payhero_username }}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Payhero API Key</label>
+                                <input type="text" class="form-input" value="{{ payhero_masked_key }}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Channel ID</label>
+                                <input type="text" class="form-input" value="{{ payhero_channel_id }}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Callback URL</label>
+                                <input type="text" class="form-input" value="{{ payhero_callback_url }}" readonly>
+                            </div>
+                            <div class="form-checkbox">
+                                <input type="checkbox" id="enable_payments" name="enable_payments" {% if site_settings.enable_payments %}checked{% endif %}>
+                                <label for="enable_payments">Enable payments for bookings and contributions</label>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Notifications Settings -->
+                    <div class="settings-section" id="notifications">
+                        <h2>Notifications</h2>
+                        <div class="stats-grid" style="margin-bottom: 1.5rem;">
+                            <div class="stat-card">
+                                <div class="stat-number">{{ unread_notifications }}</div>
+                                <div class="stat-label">Unread Alerts</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ recent_notifications|length }}</div>
+                                <div class="stat-label">Recent Messages</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ overdue_bookings }}</div>
+                                <div class="stat-label">Overdue Bookings</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ active_bookings }}</div>
+                                <div class="stat-label">Active Bookings</div>
+                            </div>
+                        </div>
+                        <div class="table-responsive" style="margin-bottom: 2rem;">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>User</th>
+                                        <th>Type</th>
+                                        <th>Title</th>
+                                        <th>Message</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for note in recent_notifications %}
+                                    <tr>
+                                        <td>{{ note.created_at|date:'Y-m-d H:i' }}</td>
+                                        <td>{{ note.user.username }}</td>
+                                        <td>{{ note.get_notification_type_display }}</td>
+                                        <td>{{ note.title }}</td>
+                                        <td>{{ note.message|linebreaksbr }}</td>
+                                        <td>
+                                            {% if note.related_url %}
+                                            <a href="{{ note.related_url }}" class="btn btn-small btn-outline">Open</a>
+                                            {% else %}
+                                            <span style="color: var(--gray-color);">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="6" style="text-align:center; color: var(--gray-color); padding: 1rem;">No notifications found</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="notifications">
+                            <div class="form-checkbox">
+                                <input type="checkbox" id="notify_booking" name="enable_messaging" {% if site_settings.enable_messaging %}checked{% endif %}>
+                                <label for="notify_booking">Send booking updates</label>
+                            </div>
+                            <div class="form-checkbox">
+                                <input type="checkbox" id="notify_payments" checked disabled>
+                                <label for="notify_payments">Send payment alerts</label>
+                            </div>
+                            <div class="form-checkbox">
+                                <input type="checkbox" id="notify_campaigns" checked disabled>
+                                <label for="notify_campaigns">Send campaign alerts</label>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- API Settings -->
+                    <div class="settings-section" id="api">
+                        <h2>API Settings</h2>
+                        <div class="stats-grid" style="margin-bottom: 1.5rem;">
+                            <div class="stat-card">
+                                <div class="stat-number">{{ site_url }}</div>
+                                <div class="stat-label">Site URL</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ payhero_masked_key }}</div>
+                                <div class="stat-label">Payhero Key</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ payhero_channel_id }}</div>
+                                <div class="stat-label">Channel ID</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ payhero_test_mode|yesno:'Test,Live' }}</div>
+                                <div class="stat-label">Mode</div>
+                            </div>
+                        </div>
+                        <div class="api-key">
+                            <code>{{ payhero_masked_key }}</code>
+                            <button class="btn-icon"><i class="fas fa-copy"></i></button>
+                        </div>
+                        <div style="margin: 1rem 0;">
+                            <button class="btn btn-outline btn-small">Regenerate API Key</button>
+                        </div>
+                        <h3 style="margin-top: 2rem;">Rate Limiting</h3>
+                        <div class="form-group">
+                            <label class="form-label">Requests per minute</label>
+                            <input type="number" class="form-input" value="60">
+                        </div>
+                        <h3>Webhooks</h3>
+                        <div class="form-group">
+                            <label class="form-label">Webhook URL</label>
+                            <input type="url" class="form-input" placeholder="https://your-app.com/webhook">
+                        </div>
+                        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                            <button class="btn btn-primary">Save Changes</button>
+                            <button class="btn btn-outline">Test Webhook</button>
+                        </div>
+                    </div>
+
+                    <!-- Backup Settings -->
+                    <div class="settings-section" id="backup">
+                        <h2>Backup Settings</h2>
+                        <div class="stats-grid" style="margin-bottom: 2rem;">
+                            <div class="stat-card">
+                                <div class="stat-number">{{ total_users }}</div>
+                                <div class="stat-label">Users</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ total_items }}</div>
+                                <div class="stat-label">Items</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ total_bookings }}</div>
+                                <div class="stat-label">Bookings</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ total_contributions }}</div>
+                                <div class="stat-label">Contributions</div>
+                            </div>
+                        </div>
+                        <div class="table-responsive" style="margin-bottom: 2rem;">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Component</th>
+                                        <th>Current State</th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Database</td>
+                                        <td>Online</td>
+                                        <td>All core tables available for backup</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Media Files</td>
+                                        <td>Available</td>
+                                        <td>Item images and uploads stored in media</td>
+                                    </tr>
+                                    <tr>
+                                        <td>System Snapshot</td>
+                                        <td>Ready</td>
+                                        <td>Use export tools for structured downloads</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+                            <button class="btn btn-primary"><i class="fas fa-download"></i> Download Backup</button>
+                            <button class="btn btn-outline"><i class="fas fa-upload"></i> Restore Backup</button>
+                            <button class="btn btn-outline"><i class="fas fa-plus"></i> Create New Backup</button>
+                        </div>
+                        <h3>Scheduled Backups</h3>
+                        <div class="form-group">
+                            <label class="form-label">Backup Frequency</label>
+                            <select class="form-select">
+                                <option>Daily</option>
+                                <option>Weekly</option>
+                                <option>Monthly</option>
+                                <option>Never</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Backup Time (UTC)</label>
+                            <input type="time" class="form-input" value="02:00">
+                        </div>
+                        <div class="form-checkbox">
+                            <input type="checkbox" id="auto_backup" checked>
+                            <label for="auto_backup">Automatically backup before updates</label>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary">Save Schedule</button>
+                        </div>
+                    </div>
+
+                    <!-- Audit Log -->
+                    <div class="settings-section" id="audit">
+                        <h2>Audit Log</h2>
+                        <div class="stats-grid" style="margin-bottom: 1.5rem;">
+                            <div class="stat-card">
+                                <div class="stat-number">{{ recent_audit_entries|length }}</div>
+                                <div class="stat-label">Recent Audit Events</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ unread_notifications }}</div>
+                                <div class="stat-label">Unread Notifications</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ active_bookings }}</div>
+                                <div class="stat-label">Active Bookings</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ overdue_bookings }}</div>
+                                <div class="stat-label">Overdue Bookings</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                            <div style="display: flex; gap: 1rem;">
+                                <input type="date" class="form-input">
+                                <input type="date" class="form-input">
+                                <button class="btn btn-primary btn-small">Filter</button>
+                            </div>
+                            <button class="btn btn-outline btn-small"><i class="fas fa-download"></i> Export Log</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>User</th>
+                                        <th>Action</th>
+                                        <th>Object</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for entry in recent_audit_entries %}
+                                    <tr>
+                                        <td>{{ entry.timestamp|date:'Y-m-d H:i' }}</td>
+                                        <td>{{ entry.performed_by.username|default:'system' }}</td>
+                                        <td><span class="badge badge-info">{{ entry.get_action_display }}</span></td>
+                                        <td>{{ entry.booking.booking_id }}</td>
+                                        <td>{{ entry.notes|default:'Booking history event recorded' }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" style="text-align:center; color: var(--gray-color); padding: 1rem;">No audit entries found</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <a href="{% url 'admin_dashboard' %}" class="logo" style="color: white;">
+                        <i class="fas fa-link"></i> Knot
+                    </a>
+                    <p>Admin Portal - Settings</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Knot. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Settings navigation
+        document.querySelectorAll('.settings-nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Remove active class from all nav items
+                document.querySelectorAll('.settings-nav-item').forEach(nav => {
+                    nav.classList.remove('active');
+                });
+                // Add active class to clicked item
+                this.classList.add('active');
+                
+                // Hide all sections
+                document.querySelectorAll('.settings-section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                
+                // Show selected section
+                const sectionId = this.getAttribute('data-section');
+                document.getElementById(sectionId).classList.add('active');
+            });
+        });
+    </script>
+    <script src="{% static 'js/admin.js' %}"></script>
+
+    <script src="{% static 'js/admin-dropdown.js' %}"></script>
+</body>
+</html>
+
+

@@ -1,0 +1,235 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knot - Tying Communities Together Through Shared Resources</title>
+    <script src="{% static 'js/theme-bootstrap.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="{% url 'index' %}" class="logo">
+                <i class="fas fa-link"></i> Knot
+            </a>
+            <ul class="nav-menu">
+                <li><a href="{% url 'index' %}" class="active">Home</a></li>
+                <li><a href="{% url 'browse' %}">Browse Items</a></li>
+                <li><a href="{% url 'suggest' %}">Suggest Item</a></li>
+                <li><a href="{% url 'goals' %}">Community Goals</a></li>
+                <li class="auth-buttons">
+                    <a href="{% url 'login' %}" class="btn-login">Login</a>
+                    <a href="{% url 'signup' %}" class="btn-signup">Sign Up</a>
+                </li>
+                <li class="user-menu" style="display: none;">
+    <div class="user-dropdown">
+           {% if user.is_authenticated and user.profile_picture %}
+           <img src="{{ user.profile_picture.url }}" 
+               alt="User" class="user-avatar">
+           {% else %}
+        <img src="https://ui-avatars.com/api/?name=User&background=ffebf3&color=2d3748" 
+             alt="User" class="user-avatar">
+           {% endif %}
+        <span class="user-name">User</span>
+        <i class="fas fa-chevron-down"></i>
+        <div class="dropdown-menu">
+            {% if user.is_authenticated %}
+                <a href="{% url 'user_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                {% if user.is_admin_approved %}
+                    <a href="{% url 'admin_dashboard' %}"><i class="fas fa-user-shield"></i> Admin Panel</a>
+                {% endif %}
+                <a href="{% url 'logout' %}" id="logoutLink"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            {% else %}
+                <a href="{% url 'login' %}"><i class="fas fa-sign-in-alt"></i> Login</a>
+                <a href="{% url 'signup' %}"><i class="fas fa-user-plus"></i> Sign Up</a>
+            {% endif %}
+        </div>
+    </div>
+</li>
+            </ul>
+            <button class="hamburger" id="hamburger">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Turn Financial Burdens Into <span class="highlight">Shared Community Assets</span></h1>
+                <p class="hero-subtitle">Knot transforms expensive, one-time-use items into shared resources. We enable resource pooling and micro-rentals to help individuals tackle home projects, start small businesses, and access technology—regardless of income.</p>
+                <div class="hero-buttons">
+                    <a href="{% url 'signup' %}" class="btn btn-primary">Join the Community</a>
+                    <a href="{% url 'browse' %}" class="btn btn-secondary">Browse Items</a>
+                </div>
+            </div>
+           <div class="hero-image">
+            <img src="{% static 'index_images/index.jpg' %}" alt="Community sharing resources">
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works">
+        <div class="container">
+            <h2 class="section-title">How Knot Works</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3>Browse Items</h3>
+                    <p>Explore tools, equipment, and technology available for rent in your community.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <h3>Book & Schedule</h3>
+                    <p>Check availability and book items for when you need them.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">
+                        <i class="fas fa-handshake"></i>
+                    </div>
+                    <h3>Share & Save</h3>
+                    <p>Access items at a fraction of the cost and share with neighbors.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3>Build Community</h3>
+                    <p>Suggest items, vote on purchases, and achieve shared goals together.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Items -->
+    <section class="featured-items">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Popular Community Items</h2>
+                <a href="{% url 'browse' %}" class="btn btn-outline">View All Items</a>
+            </div>
+            <div class="items-grid" id="featuredItems">
+                {% if featured_items %}
+                    {% for item in featured_items %}
+                        <div class="item-card">
+                            <div class="item-image">
+                                {% if item.image_url %}
+                                    <img src="{{ item.image_url }}" alt="{{ item.name }}">
+                                {% else %}
+                                    <img src="https://ui-avatars.com/api/?name={{ item.name|urlencode }}&background=ffebf3&color=2d3748" alt="{{ item.name }}">
+                                {% endif %}
+                                <span class="item-category">{{ item.category }}</span>
+                            </div>
+                            <div class="item-info">
+                                <h3>{{ item.name }}</h3>
+                                <p class="item-description">{{ item.description }}</p>
+                                <div class="item-meta">
+                                    <span><i class="fas fa-tag"></i> Ksh {{ item.price }}/day</span>
+                                    <span><i class="fas fa-star"></i> {{ item.rating }}</span>
+                                </div>
+                                <a href="{% url 'item_detail' %}" class="btn-view">View Details</a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No featured items yet — <a href="{% url 'browse' %}">browse items</a>.</p>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Ready to Join the Sharing Community?</h2>
+                <p>Sign up today and start accessing shared resources in your neighborhood.</p>
+                <a href="{% url 'signup' %}" class="btn btn-secondary">Get Started Free</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <a href="{% url 'index' %}" class="logo">
+                        <i class="fas fa-link"></i> Knot
+                    </a>
+                    <p>Tying Communities Together Through Shared Resources</p>
+                    <div class="social-links">
+                        <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook"></i></a>
+                        <a href="https://www.twitter.com" target="_blank" rel="noopener noreferrer"><i class="fab fa-twitter"></i></a>
+                        <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
+                        <a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer"><i class="fab fa-linkedin"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'browse' %}">Browse Items</a></li>
+                        <li><a href="{% url 'suggest' %}">Suggest Item</a></li>
+                        <li><a href="{% url 'goals' %}">Community Goals</a></li>
+                        <li><a href="{% url 'how_it_works' %}">How It Works</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Support</h3>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'help_center' %}">Help Center</a></li>
+                        <li><a href="{% url 'community_guidelines' %}">Community Guidelines</a></li>
+                        <li><a href="{% url 'safety_tips' %}">Safety Tips</a></li>
+                       
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Legal</h3>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'terms_of_service' %}">Terms of Service</a></li>
+                        <li><a href="{% url 'privacy_policy' %}">Privacy Policy</a></li>
+                        <li><a href="{% url 'cookie_policy' %}">Cookie Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Knot Platform. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="{% static 'js/app.js' %}"></script>
+    <script src="{% static 'js/auth.js' %}"></script>
+    <script src="{% static 'js/items.js' %}"></script>
+    <script>
+        // Minor client-side behavior only; featured items rendered server-side
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                const authButtons = document.querySelector('.auth-buttons');
+                const userMenu = document.querySelector('.user-menu');
+                {% if user.is_authenticated %}
+                    if (authButtons) authButtons.style.display = 'none';
+                    if (userMenu) userMenu.style.display = 'block';
+                {% else %}
+                    if (authButtons) authButtons.style.display = 'block';
+                    if (userMenu) userMenu.style.display = 'none';
+                {% endif %}
+            } catch (e) { /* ignore in static fallbacks */ }
+        });
+    </script>
+</body>
+</html>

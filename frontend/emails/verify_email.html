@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Verify Your Email - Knot</title>
+    <style>
+        body {
+            font-family: 'Poppins', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #ffebf3 0%, #fff5f9 100%);
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            color: #2d3748;
+            font-size: 28px;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 30px;
+            background: #ffebf3;
+            color: #2d3748;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 20px 0;
+            border: 2px solid #f8d0e0;
+        }
+        .button:hover {
+            background: #f8d0e0;
+        }
+        .footer {
+            text-align: center;
+            padding: 30px;
+            background: #f8f9fa;
+            color: #718096;
+            font-size: 14px;
+        }
+        .note {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .warning {
+            color: #e74c3c;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✨ Welcome to Knot! ✨</h1>
+        </div>
+        <div class="content">
+            <h2>Hi {{ user.username }}!</h2>
+            <p>Thanks for joining our community. Please verify your email address to start sharing resources and connecting with neighbors.</p>
+            
+            <div style="text-align: center;">
+                <a href="{{ link }}" class="button">
+                    ✅ Verify Email Address
+                </a>
+            </div>
+
+            <div class="note" style="border: 1px solid #f8d0e0; background: #fff7fb;">
+                <p><strong>Prefer token verification on localhost?</strong></p>
+                <p>Enter this token on the verification page:</p>
+                <p style="font-size: 22px; letter-spacing: 0.12em; font-weight: 700; color: #5a67d8; margin: 0;">{{ token }}</p>
+            </div>
+            
+            <div class="note">
+                <p><strong>🔔 This link and token will expire in {{ expires_in }}.</strong></p>
+                <p>If the button doesn't work, copy and paste this link into your browser:</p>
+                <p style="word-break: break-all; color: #5a67d8;">{{ link }}</p>
+            </div>
+            
+            <p style="margin-top: 20px; font-size: 14px; color: #718096;">
+                If you didn't create an account on {{ site_name }}, you can safely ignore this email.
+            </p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 {{ site_name }}. Tying Communities Together Through Shared Resources.</p>
+            <p style="font-size: 12px; margin-top: 10px;">
+                This is an automated message, please do not reply to this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

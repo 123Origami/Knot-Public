@@ -1,0 +1,958 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Management - Knot Admin</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .booking-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .status-active {
+            background: rgba(104, 211, 145, 0.2);
+            color: var(--success-color);
+        }
+        .status-pending {
+            background: rgba(246, 173, 85, 0.2);
+            color: var(--warning-color);
+        }
+        .status-completed {
+            background: rgba(90, 103, 216, 0.2);
+            color: var(--secondary-color);
+        }
+        .status-approved {
+            background: rgba(90, 103, 216, 0.2);
+            color: var(--secondary-color);
+        }
+        .status-paid {
+            background: rgba(104, 211, 145, 0.2);
+            color: var(--success-color);
+        }
+        .status-declined {
+            background: rgba(252, 129, 129, 0.2);
+            color: var(--danger-color);
+        }
+        .booking-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: var(--transition);
+        }
+        .booking-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .booking-info {
+            flex: 1;
+        }
+        .booking-meta {
+            display: flex;
+            gap: 2rem;
+            margin-top: 0.5rem;
+            color: var(--gray-color);
+            font-size: 0.9rem;
+        }
+        .timeline {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .timeline-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--primary-color);
+        }
+        .timeline-line {
+            flex: 1;
+            height: 2px;
+            background: var(--light-gray);
+        }
+        .calendar-view {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+        }
+        .calendar-weekday {
+            text-align: center;
+            font-weight: 600;
+            color: var(--gray-color);
+            padding: 0.35rem 0;
+        }
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--light-gray);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .calendar-day:hover {
+            background: var(--primary-light);
+        }
+        .calendar-day.has-bookings {
+            background: rgba(104, 211, 145, 0.1);
+            border-color: var(--success-color);
+        }
+        .calendar-day.is-selected {
+            border-color: var(--primary-dark);
+            box-shadow: 0 0 0 2px rgba(45, 55, 72, 0.12);
+        }
+        .calendar-day.is-empty {
+            border-color: transparent;
+            background: transparent;
+            cursor: default;
+        }
+        .booking-count {
+            font-size: 0.8rem;
+            color: var(--gray-color);
+        }
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .toggle-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--light-gray);
+            background: white;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .toggle-btn.active {
+            background: var(--primary-color);
+            border-color: var(--primary-dark);
+        }
+        .booking-actions {
+            margin-top: 1rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        .booking-actions .btn-icon {
+            min-height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            padding: 0.75rem;
+        }
+        .booking-actions form {
+            display: contents;
+        }
+        /* Targeted fix for the Switch to Member link */
+.admin-user-action-link {
+    color: #000000 !important; /* Pure black */
+    font-weight: 600; /* Making it slightly bolder helps it look "darker" */
+}
+
+.admin-user-action-link i {
+    color: #000000 !important; /* Ensures the icon darkens too */
+}
+
+/* Optional: Add a hover effect so the user knows it's clickable */
+.admin-user-action-link:hover {
+    color: #be185d !important; /* Switches to your primary burgundy on hover */
+}
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar admin-navbar">
+        <div class="container nav-container">
+            <a href="{% url 'admin_dashboard' %}" class="logo">
+                <i class="fas fa-link"></i> Knot Admin
+            </a>
+            <ul class="nav-menu">
+                <li><a href="{% url 'admin_dashboard' %}" {% if request.resolver_match.url_name == 'admin_dashboard' %}class="active"{% endif %}><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="{% url 'admin_users' %}" {% if request.resolver_match.url_name == 'admin_users' %}class="active"{% endif %}><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="{% url 'admin_items' %}" {% if request.resolver_match.url_name == 'admin_items' %}class="active"{% endif %}><i class="fas fa-box"></i> Items</a></li>
+                <li><a href="{% url 'admin_suggestions' %}" {% if request.resolver_match.url_name == 'admin_suggestions' %}class="active"{% endif %}><i class="fas fa-lightbulb"></i> Suggestions</a></li>
+                <li><a href="{% url 'admin_bookings' %}" {% if request.resolver_match.url_name == 'admin_bookings' %}class="active"{% endif %}><i class="fas fa-calendar-check"></i> Bookings</a></li>
+                <li><a href="{% url 'admin_request_list' %}" {% if request.resolver_match.url_name == 'admin_request_list' %}class="active"{% endif %}><i class="fas fa-user-shield"></i> Requests</a></li>
+                <li><a href="{% url 'admin_reports' %}" {% if request.resolver_match.url_name == 'admin_reports' %}class="active"{% endif %}><i class="fas fa-chart-bar"></i> Reports</a></li>
+                <li class="auth-buttons">
+                    <div class="admin-user-dropdown">
+                        <button type="button" class="admin-user-toggle admin-user-pill" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-user-shield"></i>
+                            <span>{{ user.username }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="admin-dropdown-menu">
+                            <a href="{% url 'user_dashboard' %}" class="admin-user-action-link">
+                                <i class="fas fa-user"></i>
+                                <span>Switch to Member Panel</span>
+                            </a>
+                            <a href="{% url 'logout' %}" class="admin-user-action-link danger">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                            </a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+            <button class="hamburger" id="hamburger">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container">
+            <h1><i class="fas fa-calendar-check"></i> Booking Management</h1>
+            <p>Track and manage all item bookings</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <section class="dashboard">
+        <div class="container">
+            {% if messages %}
+            <div style="margin-bottom: 1rem;">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}" style="margin-bottom: 0.6rem;">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Stats Cards -->
+            <div class="stats-grid" style="margin-bottom: 2rem;">
+                <div class="stat-card">
+                    <div class="stat-number">{{ total_bookings|default:"0" }}</div>
+                    <div class="stat-label">Total Bookings</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ active_bookings|default:"0" }}</div>
+                    <div class="stat-label">Active</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ pending_bookings|default:"0" }}</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ completed_bookings|default:"0" }}</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ overdue_bookings|default:"0" }}</div>
+                    <div class="stat-label">Overdue</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin: -0.75rem 0 1.5rem;">
+                <a class="btn {% if selected_status == 'overdue' %}btn-primary{% else %}btn-outline{% endif %}" href="{% url 'admin_bookings' %}?status=overdue">
+                    <i class="fas fa-exclamation-triangle"></i> Overdue Only
+                </a>
+                <a class="btn btn-outline" href="{% url 'admin_bookings' %}">
+                    <i class="fas fa-undo"></i> Clear Filters
+                </a>
+                {% if selected_status == 'overdue' %}
+                <span style="font-size: 0.9rem; color: var(--danger-color); font-weight: 600;">Viewing overdue bookings only</span>
+                {% endif %}
+            </div>
+
+            <!-- View Toggle -->
+            <div class="view-toggle">
+                <button class="toggle-btn active" id="listViewBtn"><i class="fas fa-list"></i> List View</button>
+                <button class="toggle-btn" id="calendarViewBtn"><i class="fas fa-calendar"></i> Calendar View</button>
+            </div>
+
+            <!-- List View -->
+            <div id="listView" style="display: block;">
+                <!-- Filters -->
+                <div class="filter-section" style="margin-bottom: 2rem;">
+                    <form id="bookingFilterForm" method="get" action="{% url 'admin_bookings' %}">
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <div style="flex: 2;">
+                                <input type="text" class="form-input" placeholder="Search by booking ID, item, borrower, steward, or location..." name="q" value="{{ search_query }}">
+                            </div>
+                            <div style="flex: 1;">
+                                <select class="form-select" name="status">
+                                    <option value="" {% if not selected_status %}selected{% endif %}>All Status</option>
+                                    <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+                                    <option value="approved" {% if selected_status == 'approved' %}selected{% endif %}>Approved</option>
+                                    <option value="paid" {% if selected_status == 'paid' %}selected{% endif %}>Paid</option>
+                                    <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active</option>
+                                    <option value="completed" {% if selected_status == 'completed' %}selected{% endif %}>Completed</option>
+                                    <option value="cancelled" {% if selected_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                    <option value="overdue" {% if selected_status == 'overdue' %}selected{% endif %}>Overdue</option>
+                                    <option value="declined" {% if selected_status == 'declined' %}selected{% endif %}>Declined</option>
+                                </select>
+                            </div>
+                            <div style="flex: 1;">
+                                <input id="bookingFromDateInput" type="date" class="form-input" placeholder="From Date" name="from_date" value="{{ selected_from_date }}">
+                            </div>
+                            <div style="flex: 1;">
+                                <input id="bookingToDateInput" type="date" class="form-input" placeholder="To Date" name="to_date" value="{{ selected_to_date }}">
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-primary" type="submit">Apply Filters</button>
+                                <a class="btn btn-outline" href="{% url 'admin_bookings' %}">Reset</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                {% if search_query or selected_status or selected_from_date or selected_to_date %}
+                <p id="bookingFilterSummary" style="margin: -0.75rem 0 1.5rem; color: var(--gray-color);">
+                    Showing {{ bookings.paginator.count }} filtered booking{{ bookings.paginator.count|pluralize }}.
+                </p>
+                {% else %}
+                <p id="bookingFilterSummary" style="margin: -0.75rem 0 1.5rem; color: var(--gray-color);"></p>
+                {% endif %}
+
+                <!-- Bookings List -->
+                <div class="admin-panel">
+                    <h3>Recent Bookings</h3>
+                    
+                    {% for booking in bookings %}
+                    <div class="booking-card" data-start-date="{{ booking.start_date|date:'Y-m-d' }}" data-end-date="{{ booking.end_date|date:'Y-m-d' }}">
+                        <div class="booking-info">
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                                <img src="{{ booking.item.display_image_url }}" alt="{{ booking.item.name }}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;">
+                                <div>
+                                    <h4>{{ booking.item.name }}</h4>
+                                    <p style="color: var(--gray-color);">{{ booking.item.description|truncatechars:50 }}</p>
+                                </div>
+                            </div>
+                            <div class="booking-meta">
+                                <span><i class="fas fa-user"></i> Borrower: {{ booking.borrower.username }}</span>
+                                <span><i class="fas fa-user"></i> Owner: {{ booking.steward.username|default:booking.item.steward.username }}</span>
+                                <span><i class="fas fa-map-marker-alt"></i> {{ booking.item.location_details|truncatechars:20 }}</span>
+                            </div>
+                            <div style="margin-top: 0.35rem;">
+                                {% if booking.chat_total_count %}
+                                <a href="/accounts/bookings/review/{{ booking.id }}/" style="font-size: 0.88rem; color: var(--secondary-color); font-weight: 600; text-decoration: none;">
+                                    <i class="fas fa-comments"></i> Pickup Chat ({{ booking.chat_total_count }})
+                                </a>
+                                {% if booking.chat_unread_count %}
+                                <span class="badge badge-warning" style="margin-left: 0.35rem;">{{ booking.chat_unread_count }} new</span>
+                                {% endif %}
+                                {% else %}
+                                <span style="font-size: 0.84rem; color: var(--gray-color);">
+                                    <i class="fas fa-comments"></i> No pickup chat messages yet
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% if booking.status == 'pending' %}
+                            <div style="margin-top: 0.55rem;">
+                                {% if booking.borrower_id_photo %}
+                               <a href="{{ booking.borrower_id_photo.url }}" 
+   target="_blank" 
+   rel="noopener" 
+   style="font-size: 0.88rem; color: #000000; font-weight: 600; text-decoration: none;">
+    <i class="fas fa-id-card"></i> View submitted ID photo
+</a>
+                                {% else %}
+                                <span style="font-size: 0.88rem; color: var(--danger-color); font-weight: 600;">
+                                    <i class="fas fa-exclamation-triangle"></i> Missing ID photo
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            <div class="timeline">
+                                <span style="font-size: 0.9rem;">{{ booking.start_date|date:"M d, Y" }}</span>
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-line"></div>
+                                <div class="timeline-dot"></div>
+                                <span style="font-size: 0.9rem;">{{ booking.end_date|date:"M d, Y" }}</span>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="booking-status status-{{ booking.status }}">{{ booking.get_status_display }}</span>
+                            {% if booking.status == 'active' %}
+                                {% if booking.end_date < today %}
+                                    <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--danger-color);">Overdue by {{ booking.end_date|timesince }}</p>
+                                {% else %}
+                                    <p style="margin-top: 0.5rem; font-size: 0.9rem;">Due {{ booking.end_date|timeuntil }}</p>
+                                {% endif %}
+                            {% elif booking.status == 'pending' %}
+                                <p style="margin-top: 0.5rem; font-size: 0.9rem;">Awaiting approval</p>
+                            {% elif booking.status == 'overdue' %}
+                                <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--danger-color);">Overdue</p>
+                            {% elif booking.status == 'completed' %}
+                                {% if booking.booking_rating_count %}
+                                    <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--success-color);">
+                                        Rated {{ booking.booking_rating_avg|floatformat:1 }}/5 ({{ booking.booking_rating_count }} review{{ booking.booking_rating_count|pluralize }})
+                                    </p>
+                                {% else %}
+                                    <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--gray-color);">Returned, awaiting rating</p>
+                                {% endif %}
+                            {% else %}
+                                <p style="margin-top: 0.5rem; font-size: 0.9rem;">{{ booking.get_status_display }}</p>
+                            {% endif %}
+                            <div class="booking-actions">
+                                <a class="btn-icon" title="View Details" href="/accounts/bookings/review/{{ booking.id }}/"><i class="fas fa-eye"></i></a>
+                                <a class="btn-icon" title="Open Pickup Chat" href="/accounts/bookings/review/{{ booking.id }}/"><i class="fas fa-comments"></i></a>
+                                {% if booking.status == 'pending' %}
+                                    <button
+                                        type="button"
+                                        class="btn-icon success js-open-approve-modal"
+                                        title="Approve"
+                                        data-booking-id="{{ booking.id }}"
+                                        data-item-name="{{ booking.item.name|escapejs }}"
+                                        data-start-date="{{ booking.start_date|date:'Y-m-d' }}"
+                                    ><i class="fa-solid fa-check"></i></button>
+                                    <form method="post" action="/accounts/bookings/reject/{{ booking.id }}/">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-icon danger" title="Reject"><i class="fa-solid fa-xmark"></i></button>
+                                    </form>
+                                {% elif booking.status == 'approved' %}
+                                    <button class="btn-icon js-sync-payment" title="Sync Payment Status" data-booking-id="{{ booking.id }}"><i class="fas fa-sync-alt"></i></button>
+                                    <span style="font-size: 0.8rem; color: var(--gray-color); grid-column: 1 / -1; text-align: center; padding: 0.5rem 0;">Waiting for payment</span>
+                                {% elif booking.status == 'paid' %}
+                                    <form method="post" action="{% url 'admin_booking_checkout' booking.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-icon" title="Check Out Item"><i class="fas fa-hand-holding"></i></button>
+                                    </form>
+                                {% elif booking.status == 'active' %}
+                                    <button class="btn-icon" title="Contact"><i class="fas fa-envelope"></i></button>
+                                    <form method="post" action="{% url 'admin_booking_return' booking.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-icon" title="Mark Returned"><i class="fas fa-check-circle"></i></button>
+                                    </form>
+                                    {% if booking.end_date < today %}
+                                    <form method="post" action="{% url 'admin_booking_mark_overdue' booking.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-icon danger" title="Flag Overdue"><i class="fas fa-flag"></i></button>
+                                    </form>
+                                    {% endif %}
+                                {% elif booking.status == 'overdue' %}
+                                    <form method="post" action="{% url 'admin_booking_mark_overdue' booking.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-icon" title="Send Overdue Reminder"><i class="fas fa-bell"></i></button>
+                                    </form>
+                                    <form method="post" action="{% url 'admin_booking_return' booking.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-icon" title="Mark Returned"><i class="fas fa-check-circle"></i></button>
+                                    </form>
+                                {% elif booking.status == 'completed' %}
+                                    <a class="btn-icon" title="View Booking Review" href="/accounts/bookings/review/{{ booking.id }}/"><i class="fas fa-star"></i></a>
+                                    <a class="btn-icon" title="View Item Details" href="/items/detail/{{ booking.item.slug }}/"><i class="fas fa-box-open"></i></a>
+                                {% else %}
+                                    <a class="btn-icon" title="View Booking" href="/accounts/bookings/review/{{ booking.id }}/"><i class="fas fa-eye"></i></a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div style="text-align: center; padding: 3rem;">
+                        <i class="fas fa-calendar-check" style="font-size: 3rem; color: var(--gray-color); margin-bottom: 1rem;"></i>
+                        <h3>No Bookings Found</h3>
+                        <p style="color: var(--gray-color);">There are no bookings in the system yet.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                <!-- Pagination -->
+                <div class="pagination">
+                    {% if bookings.has_previous %}
+                    <a class="btn btn-outline" href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}{% if selected_status %}status={{ selected_status|urlencode }}&{% endif %}{% if selected_from_date %}from_date={{ selected_from_date|urlencode }}&{% endif %}{% if selected_to_date %}to_date={{ selected_to_date|urlencode }}&{% endif %}page={{ bookings.previous_page_number }}"><i class="fas fa-chevron-left"></i> Previous</a>
+                    {% else %}
+                    <button class="btn btn-outline" disabled><i class="fas fa-chevron-left"></i> Previous</button>
+                    {% endif %}
+
+                    <span>Page {{ bookings.number }} of {{ bookings.paginator.num_pages }}</span>
+
+                    {% if bookings.has_next %}
+                    <a class="btn btn-outline" href="?{% if search_query %}q={{ search_query|urlencode }}&{% endif %}{% if selected_status %}status={{ selected_status|urlencode }}&{% endif %}{% if selected_from_date %}from_date={{ selected_from_date|urlencode }}&{% endif %}{% if selected_to_date %}to_date={{ selected_to_date|urlencode }}&{% endif %}page={{ bookings.next_page_number }}">Next <i class="fas fa-chevron-right"></i></a>
+                    {% else %}
+                    <button class="btn btn-outline" disabled>Next <i class="fas fa-chevron-right"></i></button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Calendar View (Hidden by default) -->
+            <div id="calendarView" style="display: none;">
+                <div class="calendar-view">
+                    <div class="calendar-header">
+                        <button id="calendarPrevMonthBtn" type="button" class="btn btn-outline btn-small"><i class="fas fa-chevron-left"></i></button>
+                        <h3 id="calendarMonthLabel">Calendar</h3>
+                        <button id="calendarNextMonthBtn" type="button" class="btn btn-outline btn-small"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                    <p style="margin: -0.2rem 0 0.9rem; color: var(--gray-color); font-size: 0.92rem;">
+                        Click a day to preview bookings below, then use <strong>View This Date In List</strong> to filter the full list.
+                    </p>
+                    <div id="calendarGrid" class="calendar-grid"></div>
+                </div>
+
+                <!-- Bookings for Selected Date -->
+                <div class="admin-panel">
+                    <h3 id="calendarSelectedDateHeading">Bookings for Selected Date</h3>
+                    <div style="display:flex; justify-content:flex-end; margin: -0.35rem 0 0.9rem;">
+                        <button id="applyCalendarDateServerBtn" type="button" class="btn btn-outline btn-small">
+                            <i class="fas fa-filter"></i> View This Date In List
+                        </button>
+                    </div>
+                    <div id="calendarSelectedDateList"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <a href="{% url 'admin_dashboard' %}" class="logo" style="color: white;">
+                        <i class="fas fa-link"></i> Knot
+                    </a>
+                    <p>Admin Portal - Booking Management</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Knot. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    {{ calendar_bookings|json_script:"adminBookingsCalendarData" }}
+
+    <script>
+        // View toggle
+        document.getElementById('listViewBtn').addEventListener('click', function() {
+            document.getElementById('listView').style.display = 'block';
+            document.getElementById('calendarView').style.display = 'none';
+            document.getElementById('listViewBtn').classList.add('active');
+            document.getElementById('calendarViewBtn').classList.remove('active');
+        });
+
+        document.getElementById('calendarViewBtn').addEventListener('click', function() {
+            document.getElementById('listView').style.display = 'none';
+            document.getElementById('calendarView').style.display = 'block';
+            document.getElementById('calendarViewBtn').classList.add('active');
+            document.getElementById('listViewBtn').classList.remove('active');
+        });
+
+        const calendarDataElement = document.getElementById('adminBookingsCalendarData');
+        const calendarMonthLabel = document.getElementById('calendarMonthLabel');
+        const calendarGrid = document.getElementById('calendarGrid');
+        const prevMonthButton = document.getElementById('calendarPrevMonthBtn');
+        const nextMonthButton = document.getElementById('calendarNextMonthBtn');
+        const selectedDateHeading = document.getElementById('calendarSelectedDateHeading');
+        const selectedDateList = document.getElementById('calendarSelectedDateList');
+        const bookingFromDateInput = document.getElementById('bookingFromDateInput');
+        const bookingToDateInput = document.getElementById('bookingToDateInput');
+        const bookingFilterForm = document.getElementById('bookingFilterForm');
+        const applyCalendarDateServerBtn = document.getElementById('applyCalendarDateServerBtn');
+
+        const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const monthLabelFormatter = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' });
+        const dayLabelFormatter = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        const calendarBookings = calendarDataElement ? JSON.parse(calendarDataElement.textContent || '[]') : [];
+
+        function parseIsoDateToLocal(isoDate) {
+            if (!isoDate) return null;
+            const [year, month, day] = isoDate.split('-').map(Number);
+            if (!year || !month || !day) return null;
+            return new Date(year, month - 1, day);
+        }
+
+        function toDateKey(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        const bookingsByDate = {};
+        calendarBookings.forEach((booking) => {
+            const start = parseIsoDateToLocal(booking.start_date);
+            const end = parseIsoDateToLocal(booking.end_date);
+            if (!start || !end || end < start) {
+                return;
+            }
+
+            const cursor = new Date(start);
+            while (cursor <= end) {
+                const key = toDateKey(cursor);
+                if (!bookingsByDate[key]) {
+                    bookingsByDate[key] = [];
+                }
+                bookingsByDate[key].push(booking);
+                cursor.setDate(cursor.getDate() + 1);
+            }
+        });
+
+        let calendarCurrentMonth = new Date();
+        calendarCurrentMonth = new Date(calendarCurrentMonth.getFullYear(), calendarCurrentMonth.getMonth(), 1);
+        let selectedDateKey = toDateKey(new Date());
+
+        function applySelectedDateToServerFilters() {
+            if (!bookingFilterForm || !selectedDateKey) {
+                return;
+            }
+
+            if (bookingFromDateInput) bookingFromDateInput.value = selectedDateKey;
+            if (bookingToDateInput) bookingToDateInput.value = selectedDateKey;
+            bookingFilterForm.submit();
+        }
+
+        function renderSelectedDateBookings(dateKey) {
+            const selectedDate = parseIsoDateToLocal(dateKey);
+            if (!selectedDate) {
+                return;
+            }
+
+            selectedDateHeading.textContent = `Bookings for ${dayLabelFormatter.format(selectedDate)}`;
+            selectedDateList.innerHTML = '';
+
+            const bookingsForDate = bookingsByDate[dateKey] || [];
+            if (!bookingsForDate.length) {
+                const empty = document.createElement('p');
+                empty.style.color = 'var(--gray-color)';
+                empty.style.margin = '0';
+                empty.textContent = 'No bookings for this date.';
+                selectedDateList.appendChild(empty);
+                return;
+            }
+
+            bookingsForDate.forEach((booking) => {
+                const card = document.createElement('div');
+                card.className = 'booking-card';
+
+                const info = document.createElement('div');
+                info.className = 'booking-info';
+
+                const title = document.createElement('h4');
+                title.textContent = booking.item_name || `Booking #${booking.id}`;
+                info.appendChild(title);
+
+                const meta = document.createElement('p');
+                meta.style.color = 'var(--gray-color)';
+                meta.style.fontSize = '0.9rem';
+                meta.style.margin = '0.35rem 0 0';
+                meta.textContent = `Booking ID: ${booking.booking_id || booking.id}`;
+                info.appendChild(meta);
+
+                const actions = document.createElement('div');
+                actions.style.textAlign = 'right';
+
+                const status = document.createElement('span');
+                status.className = `booking-status status-${booking.status}`;
+                status.textContent = booking.status_label || booking.status;
+                actions.appendChild(status);
+
+                const detailsLink = document.createElement('a');
+                detailsLink.className = 'btn btn-outline btn-small';
+                detailsLink.style.marginLeft = '0.6rem';
+                detailsLink.href = `/accounts/bookings/review/${booking.id}/`;
+                detailsLink.textContent = 'Details';
+                actions.appendChild(detailsLink);
+
+                card.appendChild(info);
+                card.appendChild(actions);
+                selectedDateList.appendChild(card);
+            });
+        }
+
+        function renderCalendarMonth() {
+            if (!calendarGrid) {
+                return;
+            }
+
+            calendarGrid.innerHTML = '';
+            calendarMonthLabel.textContent = monthLabelFormatter.format(calendarCurrentMonth);
+
+            weekdayLabels.forEach((label) => {
+                const weekdayEl = document.createElement('div');
+                weekdayEl.className = 'calendar-weekday';
+                weekdayEl.textContent = label;
+                calendarGrid.appendChild(weekdayEl);
+            });
+
+            const year = calendarCurrentMonth.getFullYear();
+            const month = calendarCurrentMonth.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            for (let i = 0; i < firstDay.getDay(); i += 1) {
+                const blank = document.createElement('div');
+                blank.className = 'calendar-day is-empty';
+                calendarGrid.appendChild(blank);
+            }
+
+            for (let day = 1; day <= daysInMonth; day += 1) {
+                const dateObj = new Date(year, month, day);
+                const dateKey = toDateKey(dateObj);
+                const dayBookings = bookingsByDate[dateKey] || [];
+
+                const dayCell = document.createElement('div');
+                dayCell.className = 'calendar-day';
+                if (dayBookings.length) {
+                    dayCell.classList.add('has-bookings');
+                }
+                if (dateKey === selectedDateKey) {
+                    dayCell.classList.add('is-selected');
+                }
+
+                const dayNumber = document.createElement('div');
+                dayNumber.textContent = String(day);
+                dayCell.appendChild(dayNumber);
+
+                if (dayBookings.length) {
+                    const count = document.createElement('span');
+                    count.className = 'booking-count';
+                    count.textContent = `${dayBookings.length} booking${dayBookings.length === 1 ? '' : 's'}`;
+                    dayCell.appendChild(count);
+                }
+
+                dayCell.addEventListener('click', function () {
+                    selectedDateKey = dateKey;
+                    renderCalendarMonth();
+                    renderSelectedDateBookings(selectedDateKey);
+                });
+
+                calendarGrid.appendChild(dayCell);
+            }
+        }
+
+        if (prevMonthButton && nextMonthButton && calendarGrid) {
+            prevMonthButton.addEventListener('click', function () {
+                calendarCurrentMonth = new Date(calendarCurrentMonth.getFullYear(), calendarCurrentMonth.getMonth() - 1, 1);
+                renderCalendarMonth();
+            });
+
+            nextMonthButton.addEventListener('click', function () {
+                calendarCurrentMonth = new Date(calendarCurrentMonth.getFullYear(), calendarCurrentMonth.getMonth() + 1, 1);
+                renderCalendarMonth();
+            });
+
+            const selectedDateObj = parseIsoDateToLocal(selectedDateKey);
+            if (selectedDateObj) {
+                calendarCurrentMonth = new Date(selectedDateObj.getFullYear(), selectedDateObj.getMonth(), 1);
+            }
+            renderCalendarMonth();
+            renderSelectedDateBookings(selectedDateKey);
+        }
+
+        if (applyCalendarDateServerBtn) {
+            applyCalendarDateServerBtn.addEventListener('click', function () {
+                applySelectedDateToServerFilters();
+            });
+        }
+        
+        // Event delegation for modal close
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('js-close-modal')) {
+                closeModal();
+            }
+
+            const approveBtn = e.target.closest('.js-open-approve-modal');
+            if (approveBtn) {
+                openApproveModal(
+                    approveBtn.dataset.bookingId,
+                    approveBtn.dataset.itemName,
+                    approveBtn.dataset.startDate
+                );
+            }
+        });
+
+        // Modal functions
+        function openApproveModal(bookingId, itemName, requestedStartDate) {
+            const todayIso = '{{ today|date:"Y-m-d" }}';
+            const pickupDateDefault = requestedStartDate || todayIso;
+
+            // Create modal HTML
+            const modal = document.createElement('div');
+            modal.id = 'approveModal';
+            modal.innerHTML = `
+                <div class="modal-overlay js-close-modal" data-modal="bookingDetailsModal"></div>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Approve Booking</h3>
+                        <button class="modal-close js-close-modal" data-modal="bookingDetailsModal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Item:</strong> ${itemName}</p>
+                        <form id="approveForm" method="post" action="{% url 'admin_booking_approve' 0 %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="booking_id" value="${bookingId}">
+                            <div class="form-group">
+                                <label>Pickup Date *</label>
+                                <input
+                                    type="date"
+                                    name="pickup_date"
+                                    class="form-input"
+                                    min="${todayIso}"
+                                    max="${requestedStartDate || ''}"
+                                    value="${pickupDateDefault}"
+                                    required
+                                >
+                                <small style="display:block; margin-top:0.4rem; color:#718096;">
+                                    Pickup date must be between today and the member's requested start date.
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label>Pickup Time *</label>
+                                <input type="time" name="pickup_time" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Pickup Location</label>
+                                <textarea name="pickup_location" class="form-textarea" rows="3" placeholder="Enter pickup location details..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Notes (optional)</label>
+                                <textarea name="notes" class="form-textarea" rows="2" placeholder="Additional notes for the borrower..."></textarea>
+                            </div>
+                            <div class="modal-actions">
+                                <button type="button" class="btn btn-outline js-close-modal" data-modal="bookingDetailsModal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Approve Booking</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            // Update form action URL safely by only replacing the trailing booking id segment.
+            const form = modal.querySelector('#approveForm');
+            form.action = form.action.replace(/\/0\/?$/, `/${bookingId}/`);
+
+            form.addEventListener('submit', function(e) {
+                const pickupDateInput = form.querySelector('input[name="pickup_date"]');
+                const pickupDate = pickupDateInput ? pickupDateInput.value : '';
+
+                if (!pickupDate) {
+                    e.preventDefault();
+                    alert('Pickup date is required.');
+                    return;
+                }
+
+                if (pickupDate < todayIso) {
+                    e.preventDefault();
+                    alert('Pickup date cannot be in the past.');
+                    return;
+                }
+
+                if (requestedStartDate && pickupDate > requestedStartDate) {
+                    e.preventDefault();
+                    alert('Pickup date cannot be after the member\'s requested start date.');
+                }
+            });
+            
+            document.body.appendChild(modal);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('approveModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function viewBookingDetails(bookingId) {
+            window.location.href = `/accounts/bookings/review/${bookingId}/`;
+        }
+
+        function checkoutBooking() {}
+
+        // Modal styles
+        const modalStyles = `
+            .modal-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 1000;
+            }
+            .modal-content {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white;
+                border-radius: 12px;
+                padding: 0;
+                max-width: 500px;
+                width: 90%;
+                max-height: 90vh;
+                overflow-y: auto;
+                z-index: 1001;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            }
+            .modal-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1.5rem;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            .modal-header h3 {
+                margin: 0;
+                color: #2d3748;
+            }
+            .modal-close {
+                background: none;
+                border: none;
+                font-size: 1.5rem;
+                cursor: pointer;
+                color: #718096;
+                padding: 0.25rem;
+                border-radius: 4px;
+                transition: all 0.2s;
+            }
+            .modal-close:hover {
+                background: #f7fafc;
+                color: #2d3748;
+            }
+            .modal-body {
+                padding: 1.5rem;
+            }
+            .modal-actions {
+                display: flex;
+                gap: 1rem;
+                justify-content: flex-end;
+                margin-top: 1.5rem;
+            }
+        `;
+
+        // Add modal styles to head
+        const style = document.createElement('style');
+        style.textContent = modalStyles;
+        document.head.appendChild(style);
+
+    </script>
+
+    <script src="{% static 'js/admin.js' %}"></script>
+
+    <script src="{% static 'js/admin-dropdown.js' %}"></script>
+</body>
+</html>
+
+

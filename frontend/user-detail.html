@@ -1,0 +1,389 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ profile_user.get_full_name|default:profile_user.username }} - Knot</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #ff6b9d;
+            --danger-color: #f56565;
+            --success-color: #48bb78;
+            --warning-color: #ed8936;
+            --info-color: #4299e1;
+            --gray-color: #718096;
+            --light-gray: #edf2f7;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f8f9fa;
+            color: #2d3748;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .back-link:hover {
+            gap: 1rem;
+        }
+
+        .profile-header {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 2rem;
+            align-items: start;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            margin-bottom: 2rem;
+        }
+
+        .profile-avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 3px solid var(--primary-color);
+        }
+
+        .profile-info h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .profile-username {
+            color: var(--gray-color);
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        .profile-stats {
+            display: flex;
+            gap: 2rem;
+            margin: 1.5rem 0;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--gray-color);
+        }
+
+        .profile-bio {
+            color: #4a5568;
+            line-height: 1.6;
+            margin: 1rem 0;
+        }
+
+        .profile-contact {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.95rem;
+            color: #4a5568;
+        }
+
+        .contact-item i {
+            color: var(--primary-color);
+            width: 20px;
+        }
+
+        .section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            margin-bottom: 2rem;
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #2d3748;
+        }
+
+        .section h2 i {
+            color: var(--primary-color);
+        }
+
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .item-card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        .item-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .item-image {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            background: var(--light-gray);
+        }
+
+        .item-body {
+            padding: 1rem;
+        }
+
+        .item-name {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #2d3748;
+        }
+
+        .item-category {
+            font-size: 0.85rem;
+            color: var(--gray-color);
+            margin-bottom: 0.75rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--gray-color);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--light-gray);
+        }
+
+        .reviews-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .review-item {
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: #fafbfc;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .review-author {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .rating {
+            display: flex;
+            gap: 0.25rem;
+            color: #ffd700;
+        }
+
+        .review-text {
+            color: #4a5568;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .profile-header {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .profile-avatar {
+                margin: 0 auto;
+            }
+
+            .profile-stats {
+                justify-content: center;
+                gap: 1rem;
+            }
+
+            .items-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="javascript:history.back()" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <div>
+                {% if profile_user.profile_picture %}
+                    <img src="{{ profile_user.profile_picture.url }}" alt="{{ profile_user.username }}" class="profile-avatar">
+                {% else %}
+                    <img src="https://ui-avatars.com/api/?name={{ profile_user.get_full_name|default:profile_user.username|urlencode }}&background=ff6b9d&color=ffffff&size=150&bold=true" 
+                         alt="{{ profile_user.username }}" class="profile-avatar">
+                {% endif %}
+            </div>
+
+            <div class="profile-info">
+                <h1>{{ profile_user.get_full_name|default:profile_user.username }}</h1>
+                <div class="profile-username">@{{ profile_user.username }}</div>
+
+                <div class="profile-stats">
+                    <div class="stat">
+                        <div class="stat-value">{{ items_count }}</div>
+                        <div class="stat-label">Items Listed</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">{{ bookings_count }}</div>
+                        <div class="stat-label">Bookings</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">{{ avg_rating|floatformat:1 }}</div>
+                        <div class="stat-label">Rating</div>
+                    </div>
+                </div>
+
+                {% if profile_user.bio %}
+                <div class="profile-bio">{{ profile_user.bio }}</div>
+                {% endif %}
+
+                <div class="profile-contact">
+                    {% if profile_user.location_details %}
+                    <div class="contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>{{ profile_user.location_details }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="contact-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>Joined {{ profile_user.date_joined|date:"F Y" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Items Section -->
+        {% if items %}
+        <div class="section">
+            <h2>
+                <i class="fas fa-box"></i> Items Listed
+            </h2>
+            <div class="items-grid">
+                {% for item in items %}
+                <div class="item-card">
+                    {% if item.image %}
+                        <img src="{{ item.image.url }}" alt="{{ item.name }}" class="item-image">
+                    {% else %}
+                        <div class="item-image" style="background: var(--light-gray); display: flex; align-items: center; justify-content: center; color: var(--gray-color);">
+                            <i class="fas fa-image" style="font-size: 2rem;"></i>
+                        </div>
+                    {% endif %}
+                    <div class="item-body">
+                        <div class="item-name">{{ item.name }}</div>
+                        <div class="item-category">{{ item.category.name|default:"General" }}</div>
+                        {% if item.daily_rate %}
+                        <div style="font-size: 0.9rem; color: var(--primary-color); font-weight: 600;">
+                            Ksh {{ item.daily_rate }}/day
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Reviews Section -->
+        {% if reviews %}
+        <div class="section">
+            <h2>
+                <i class="fas fa-star"></i> Reviews ({{ reviews|length }})
+            </h2>
+            <div class="reviews-list">
+                {% for review in reviews %}
+                <div class="review-item">
+                    <div class="review-header">
+                        <div class="review-author">{{ review.reviewer.get_full_name|default:review.reviewer.username }}</div>
+                        <div class="rating">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= review.rating %}
+                                    <i class="fas fa-star"></i>
+                                {% else %}
+                                    <i class="far fa-star"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% if review.comment %}
+                    <div class="review-text">{{ review.comment }}</div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <i class="fas fa-star"></i>
+                    <p>No reviews yet</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
